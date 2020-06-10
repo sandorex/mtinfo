@@ -1,0 +1,4 @@
+#define VERSION_MAJOR @mtinfo_VERSION_MAJOR@
+#define VERSION_MINOR @mtinfo_VERSION_MINOR@
+#define VERSION_PATCH @mtinfo_VERSION_PATCH@
+#define VERSION "@mtinfo_VERSION@"
