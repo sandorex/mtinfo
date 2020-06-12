@@ -18,6 +18,27 @@ project (mtinfo VERSION 0.1.0
                 DESCRIPTION "mtinfo library, also supports terminfo"
                 LANGUAGES CXX)
 
+# TODO add option to embed all the terminfo files selected or found on the system
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Og")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+
+string (APPEND CMAKE_CXX_FLAGS_DEBUG " -Wall -Wpedantic -fexceptions -Og -g3 -ggdb")
+string (APPEND CMAKE_CXX_FLAGS_RELEASE " -Wall -Wpedantic -fexceptions -O3")
+
 add_library (mtinfo src/terminfo.cc)
-target_compile_features (mtinfo PRIVATE cxx_std_17)
-target_include_directories (mtinfo PUBLIC include)
+target_compile_features (mtinfo PUBLIC cxx_std_17)
+target_include_directories (mtinfo
+    PUBLIC include
+    PUBLIC ${PROJECT_BINARY_DIR})
+set_target_properties (mtinfo PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION 1
+    # PUBLIC_HEADER include/mtinfo/mtinfo.hh # TODO
+    CXX_VISIBILITY_PRESET hidden
+    CXX_VISIBILITY_INLINES_HIDDEN ON)
+
+include(GenerateExportHeader)
+generate_export_header (mtinfo)
+
+add_subdirectory (tests)
