@@ -210,10 +210,11 @@ namespace mtinfo::terminfo {
             // only write if there's anything to write
             if (bools_raw.size() > 0)
                 for (size_t i = 0; i < bools_raw.size(); ++i) {
+                    // im not going by the spec here meh
                     if (bools_raw[i] == -1)
                         terminfo.bools[i] = {};
                     else
-                        terminfo.bools[i] = bools_raw[i];
+                        terminfo.bools[i] = bools_raw[i] > 0;
                 }
         }
 
@@ -231,6 +232,7 @@ namespace mtinfo::terminfo {
             // only write if there's anything to write
             if (numbers_raw.size() > 0)
                 for (size_t i = 0; i < numbers_raw.size(); ++i) {
+                    // im not going by the spec here meh
                     if (numbers_raw[i] == -1)
                         terminfo.bools[i] = {};
                     else
