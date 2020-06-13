@@ -17,57 +17,16 @@
 #include <iterator>
 
 #include "mtinfo/terminfo.hh"
+#include "terminfo_utils.hh"
 
-// get a signed short (2 bytes) using little endian byte order
-template <class T>
-inline int16_t i16_le(T& iter) {
-    const auto a = *iter++;
-    const auto b = *iter++;
-
-    return (b << 8) | a;
-}
-
-template <class T>
-std::vector<int16_t> i16_le(T& iter, size_t amount) {
-    std::vector<int16_t> buffer(amount);
-
-    for (size_t i = 0; i < amount; i++)
-        buffer[i] = i16_le(iter);
-
-    return buffer;
-}
-
-template <size_t Amount, class T>
-std::array<int16_t, Amount> i16_le(T& iter) {
-    std::array<int16_t, Amount> buffer;
-
-    for (size_t i = 0; i < Amount; i++)
-        buffer[i] = i16_le(iter);
-
-    return buffer;
-}
-
-// splits string by delimiter
-std::vector<std::string> split(std::string input, const std::string_view& delimiter) {
-    std::vector<std::string> buffer;
-    size_t pos = 0;
-    while ((pos = input.find(delimiter)) != std::string::npos) {
-        buffer.push_back(input.substr(0, pos));
-        input.erase(0, pos + delimiter.length());
-    }
-
-    // the leftovers
-    buffer.push_back(input);
-
-    return buffer;
-}
-
+// parses header of terminfo
 template <class BeginIt, class EndIt>
 std::array<int16_t, 6> parse_header_section(BeginIt& begin, EndIt& end) {
     // TODO check bounds of the iterator
     return i16_le<6>(begin);
 }
 
+// parses name section of terminfo
 template <class BeginIt, class EndIt>
 std::vector<std::string> parse_names(BeginIt& begin, EndIt& end, size_t length) {
     // TODO check iterator bounds
@@ -77,6 +36,7 @@ std::vector<std::string> parse_names(BeginIt& begin, EndIt& end, size_t length) 
     return names;
 }
 
+// parses bool section of terminfo
 template <class BeginIt, class EndIt>
 std::vector<int8_t> parse_bool_section(BeginIt& begin, EndIt& end, size_t length) {
     // TODO check iterator bounds
@@ -90,6 +50,7 @@ std::vector<int8_t> parse_bool_section(BeginIt& begin, EndIt& end, size_t length
     return bools;
 }
 
+// parses numbers section of terminfo
 template <class BeginIt, class EndIt>
 std::vector<int16_t> parse_numbers_section(BeginIt& begin, EndIt& end, size_t length_shorts) {
     // TODO check iterator bounds
@@ -102,6 +63,7 @@ std::vector<int16_t> parse_numbers_section(BeginIt& begin, EndIt& end, size_t le
     return numbers;
 }
 
+// parses string offsets section of terminfo
 template <class BeginIt, class EndIt>
 std::vector<int16_t> parse_string_offsets_section(BeginIt& begin, EndIt& end, size_t length_shorts) {
     // TODO check iterator bounds
@@ -114,6 +76,7 @@ std::vector<int16_t> parse_string_offsets_section(BeginIt& begin, EndIt& end, si
     return str_offsets;
 }
 
+// parses string table section of terminfo
 template <class BeginIt, class EndIt>
 std::array<std::optional<std::string>, TERMINFO_STRINGS_LEN> parse_string_table(BeginIt& begin, EndIt& end, const std::vector<int16_t>& offsets, size_t length) {
     std::array<std::optional<std::string>, TERMINFO_STRINGS_LEN> string_table;
@@ -215,11 +178,19 @@ namespace mtinfo::terminfo {
         if (magic_number != MAGIC_NUMBER_16)
             throw std::runtime_error("Invalid magic number"); // TODO errors
 
-        // sizes
+        // size of name/description section
         const int16_t names_section_size_bytes = header.at(1);
+
+        // size of bool section
         const int16_t bool_section_size_bytes = header.at(2);
+
+        // size of numbers section (in shorts)
         const int16_t num_section_size_shorts = header.at(3);
+
+        // size of string offsets section (in shorts)
         const int16_t str_offsets_section_size_shorts = header.at(4);
+
+        // size of the string table
         const int16_t str_table_section_size_bytes = header.at(5);
 
         // temp
@@ -233,13 +204,18 @@ namespace mtinfo::terminfo {
         terminfo.names = ::parse_names(begin, end, names_section_size_bytes);
 
         // -- bools --
-        // read the bools
-        const auto bools_raw = ::parse_bool_section(begin, end, bool_section_size_bytes);
+        {
+            const auto bools_raw = ::parse_bool_section(begin, end, bool_section_size_bytes);
 
-        // only write if there's anything to write
-        if (bools_raw.size() > 0)
-            // write over the defaults
-            std::copy(bools_raw.begin(), bools_raw.end(), terminfo.bools.begin());
+            // only write if there's anything to write
+            if (bools_raw.size() > 0)
+                for (size_t i = 0; i < bools_raw.size(); ++i) {
+                    if (bools_raw[i] == -1)
+                        terminfo.bools[i] = {};
+                    else
+                        terminfo.bools[i] = bools_raw[i];
+                }
+        }
 
         // for legacy reasons there's a padding byte if numbers start on a
         // uneven address
@@ -249,18 +225,24 @@ namespace mtinfo::terminfo {
         }
 
         // -- numbers --
-        // read the numbers
-        const auto numbers_raw = ::parse_numbers_section(begin, end, num_section_size_shorts);
+        {
+            const auto numbers_raw = ::parse_numbers_section(begin, end, num_section_size_shorts);
 
-        // only write if there's anything to write
-        if (bools_raw.size() > 0)
-            // write over the defaults
-            std::copy(numbers_raw.begin(), numbers_raw.end(), terminfo.numbers.begin());
+            // only write if there's anything to write
+            if (numbers_raw.size() > 0)
+                for (size_t i = 0; i < numbers_raw.size(); ++i) {
+                    if (numbers_raw[i] == -1)
+                        terminfo.bools[i] = {};
+                    else
+                        terminfo.bools[i] = numbers_raw[i];
+                }
+        }
 
         // -- strings --
-        // read the offsets
-        const auto strings_offsets = ::parse_string_offsets_section(begin, end, str_offsets_section_size_shorts);
-        terminfo.strings = ::parse_string_table(begin, end, strings_offsets, str_table_section_size_bytes);
+        {
+            const auto strings_offsets = ::parse_string_offsets_section(begin, end, str_offsets_section_size_shorts);
+            terminfo.strings = ::parse_string_table(begin, end, strings_offsets, str_table_section_size_bytes);
+        }
 
         // TODO parse extended curses table thingy
 

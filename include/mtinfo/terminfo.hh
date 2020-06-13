@@ -23,15 +23,13 @@
 #include "mtinfo/terminfo_constants.hh"
 
 namespace mtinfo::terminfo {
-    const int MAGIC_NUMBER_16 = 0x011A; //0432;
-    // const int MAGIC_NUMBER_32 = 01036; // i havent encountered this yet
+    const int MAGIC_NUMBER_16 = 0x011A;
 
     // contains all the raw terminfo data
     struct MTINFO_EXPORT Terminfo {
         std::vector<std::string> names;
-        std::array<int8_t, TERMINFO_BOOLEANS_LEN> bools; // TODO default everything to -1
-        std::array<int16_t, TERMINFO_NUMBERS_LEN> numbers;
-        // std::array<int16_t, TERMINFO_STRINGS_LEN> string_offsets;
+        std::array<std::optional<int8_t>, TERMINFO_BOOLEANS_LEN> bools;
+        std::array<std::optional<int16_t>, TERMINFO_NUMBERS_LEN> numbers;
         std::array<std::optional<std::string>, TERMINFO_STRINGS_LEN> strings;
 
         Terminfo()
@@ -40,8 +38,8 @@ namespace mtinfo::terminfo {
             , numbers()
             , strings() {
             // fill everything with undefined value
-            std::fill(bools.begin(), bools.end(), -1);
-            std::fill(numbers.begin(), numbers.end(), -1);
+            std::fill(bools.begin(), bools.end(), std::nullopt);
+            std::fill(numbers.begin(), numbers.end(), std::nullopt);
             std::fill(strings.begin(), strings.end(), std::nullopt);
         }
     };

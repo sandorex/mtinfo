@@ -26,11 +26,13 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 string (APPEND CMAKE_CXX_FLAGS_DEBUG " -Wall -Wpedantic -fexceptions -Og -g3 -ggdb")
 string (APPEND CMAKE_CXX_FLAGS_RELEASE " -Wall -Wpedantic -fexceptions -O3")
 
-add_library (mtinfo src/terminfo.cc)
+add_library (mtinfo src/terminfo.cc
+                    src/terminfo_utils.cc)
 target_compile_features (mtinfo PUBLIC cxx_std_17)
 target_include_directories (mtinfo
-    PUBLIC include
-    PUBLIC ${PROJECT_BINARY_DIR})
+    PUBLIC include/
+    PUBLIC ${PROJECT_BINARY_DIR}
+    PRIVATE src/)
 set_target_properties (mtinfo PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION 1
