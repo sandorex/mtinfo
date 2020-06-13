@@ -38,10 +38,11 @@ namespace mtinfo::terminfo {
             : names()
             , bools()
             , numbers()
-            , strings({}) {
+            , strings() {
             // fill everything with undefined value
             std::fill(bools.begin(), bools.end(), -1);
             std::fill(numbers.begin(), numbers.end(), -1);
+            std::fill(strings.begin(), strings.end(), std::nullopt);
         }
     };
 
