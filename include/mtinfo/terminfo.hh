@@ -14,42 +14,49 @@
 
 #pragma once
 
+#include "mtinfo/terminfo_constants.hh"
 #include "mtinfo_export.h"
 
-#include <vector>
+#include <map>
 #include <optional>
 #include <string>
-#include <map>
+#include <vector>
 
-#include "mtinfo/terminfo_constants.hh"
-
-namespace mtinfo::terminfo {
-    const int MAGIC_NUMBER_16 = 0x011A;
-
+namespace mtinfo
+{
     // contains all the terminfo data
     struct MTINFO_EXPORT Terminfo {
-        std::vector<std::string> names;
-        std::array<std::optional<bool>, TERMINFO_BOOLEANS_LEN> bools;
-        std::array<std::optional<int16_t>, TERMINFO_NUMBERS_LEN> numbers;
-        std::array<std::optional<std::string>, TERMINFO_STRINGS_LEN> strings;
-        std::map<std::string_view, bool> extended_bools;
-        std::map<std::string_view, int16_t> extended_numbers;
+        std::vector<std::string>                                        names;
+        std::array<bool, internal::constants::TERMINFO_BOOLEANS_LENGTH> bools;
+        std::array<std::optional<int16_t>,
+                   internal::constants::TERMINFO_NUMBERS_LENGTH>
+          numbers;
+        std::array<std::optional<std::string>,
+                   internal::constants::TERMINFO_STRINGS_LENGTH>
+                                                strings;
+        std::map<std::string_view, bool>        extended_bools;
+        std::map<std::string_view, int16_t>     extended_numbers;
         std::map<std::string_view, std::string> extended_strings;
 
         Terminfo()
-            : names()
-            , bools()
-            , numbers()
-            , strings() {
+          : names()
+          , bools()
+          , numbers()
+          , strings()
+        {
             // fill everything with undefined value
-            std::fill(bools.begin(), bools.end(), std::nullopt);
-            std::fill(numbers.begin(), numbers.end(), std::nullopt);
-            std::fill(strings.begin(), strings.end(), std::nullopt);
+            std::fill (bools.begin(), bools.end(), false);
+            std::fill (numbers.begin(), numbers.end(), std::nullopt);
+            std::fill (strings.begin(), strings.end(), std::nullopt);
         }
     };
 
-    template <class BeginIt, class EndIt>
-    MTINFO_EXPORT Terminfo parse_terminfo(BeginIt begin, EndIt end);
-    MTINFO_EXPORT Terminfo parse_terminfo(const std::vector<uint8_t>& data);
-    MTINFO_EXPORT Terminfo parse_terminfo_file(const std::string_view& path);
-}
+    MTINFO_EXPORT Terminfo
+    parse_terminfo (const std::vector<uint8_t>& data);
+
+    MTINFO_EXPORT Terminfo
+    parse_terminfo (const uint8_t* data, size_t length);
+
+    MTINFO_EXPORT Terminfo
+    parse_terminfo_file (const std::string_view& path);
+} // namespace mtinfo
