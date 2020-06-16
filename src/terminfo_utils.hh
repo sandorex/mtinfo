@@ -19,7 +19,6 @@
 
 #include <array>
 #include <cstdint>
-#include <stdexcept> // temp
 #include <string>
 #include <vector>
 
@@ -185,7 +184,8 @@ parse_string_table (BeginIt&                                   begin,
     if (begin + length >= end)
         throw mtinfo::ErrorEOF ("the string table");
 
-    std::vector<std::optional<std::string>> string_table (length);
+    std::vector<std::optional<std::string>> string_table (
+      mtinfo::internal::constants::TERMINFO_STRINGS_LENGTH);
 
     const std::string strings_table_raw (begin, begin + length);
     begin += length;
