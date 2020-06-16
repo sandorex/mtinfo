@@ -27,7 +27,7 @@ string (APPEND CMAKE_CXX_FLAGS_DEBUG " -Wall -Wpedantic -fexceptions -Og -g3 -gg
 string (APPEND CMAKE_CXX_FLAGS_RELEASE " -Wall -Wpedantic -fexceptions -O3")
 
 add_library (mtinfo src/terminfo.cc
-                    src/terminfo_utils.cc)
+                    src/utils.cc)
 target_compile_features (mtinfo PUBLIC cxx_std_17)
 target_include_directories (mtinfo
     PUBLIC include/

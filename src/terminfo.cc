@@ -15,7 +15,7 @@
 #include "mtinfo/terminfo.hh"
 
 #include "mtinfo/errors.hh"
-#include "terminfo_utils.hh"
+#include "terminfo_parser.hh"
 
 #include <fstream>
 #include <iostream>
