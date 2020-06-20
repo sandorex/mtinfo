@@ -24,6 +24,8 @@
 
 namespace mtinfo
 {
+    // TODO MAKE EVERYTHING signed instead of unsigned cause why not
+
     // contains all the terminfo data
     struct MTINFO_EXPORT Terminfo {
         std::vector<std::string>                                        names;

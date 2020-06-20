@@ -40,6 +40,8 @@ namespace mtinfo
     {
         // TODO error if file doesnt exist
         std::ifstream file (path.data(), std::ios::binary);
+        if (!file.good())
+            throw Error ("File '" + std::string (path) + "' does not exist");
 
         std::vector<unsigned char> buffer { std::istreambuf_iterator<char> (
                                               file),

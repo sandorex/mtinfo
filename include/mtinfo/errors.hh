@@ -19,7 +19,7 @@
 
 namespace mtinfo
 {
-    class Error : std::exception
+    class Error : public std::exception
     {
         const std::string _msg;
 
@@ -40,14 +40,14 @@ namespace mtinfo
         }
     };
 
-    struct ErrorParsing : Error {
+    struct ErrorParsing : public Error {
         ErrorParsing (const std::string_view& msg)
           : Error ("Error while parsing: " + std::string (msg))
         {
         }
     };
 
-    struct ErrorEOF : ErrorParsing {
+    struct ErrorEOF : public ErrorParsing {
         ErrorEOF (const std::string_view& section)
           : ErrorParsing ("reached EOF while parsing " + std::string (section))
         {
