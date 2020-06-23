@@ -121,25 +121,25 @@ parse_bool_section (BeginIt& begin, EndIt& end, size_t length)
 
 // parses numbers section of terminfo
 template <class BeginIt, class EndIt>
-std::vector<std::optional<int16_t>>
-parse_numbers_section (BeginIt& begin, EndIt& end, size_t length_shorts)
+std::vector<std::optional<uint16_t>>
+parse_numbers_section (BeginIt& begin, EndIt& end, size_t length)
 {
     // numbers are signed shorts (2 bytes), any negative number is invalid
     // except -1 which means the number is not defined
     //
     // im gonna simplify it so that any number < 0 means that it's undefined
 
-    if (begin + (length_shorts * 2) > end)
+    if (begin + (length * 2) > end)
         throw mtinfo::ErrorEOF ("the numbers section");
 
-    std::vector<std::optional<int16_t>> numbers (length_shorts);
-    std::vector<int16_t> numbers_raw = ::i16_le (begin, length_shorts);
+    std::vector<std::optional<uint16_t>> numbers (length);
+    std::vector<int16_t>                 numbers_raw = ::i16_le (begin, length);
 
-    for (size_t i = 0; i < length_shorts; ++i) {
+    for (size_t i = 0; i < length; ++i) {
         if (numbers_raw[i] < 0)
             numbers[i] = {};
         else
-            numbers[i] = numbers_raw[i];
+            numbers[i] = static_cast<unsigned> (numbers_raw[i]);
     }
 
     return numbers;
@@ -147,7 +147,7 @@ parse_numbers_section (BeginIt& begin, EndIt& end, size_t length_shorts)
 
 // parses string offsets section of terminfo
 template <class BeginIt, class EndIt>
-std::vector<std::optional<int16_t>>
+std::vector<std::optional<uint16_t>>
 parse_string_offsets_section (BeginIt& begin, EndIt& end, size_t length_shorts)
 {
     // offsets section contains short integers (2 bytes) that specify where a
@@ -160,14 +160,14 @@ parse_string_offsets_section (BeginIt& begin, EndIt& end, size_t length_shorts)
     if (begin + (length_shorts * 2) > end)
         throw mtinfo::ErrorEOF ("the string offsets section");
 
-    std::vector<std::optional<int16_t>> offsets (length_shorts);
+    std::vector<std::optional<uint16_t>> offsets (length_shorts);
     std::vector<int16_t> offsets_raw = ::i16_le (begin, length_shorts);
 
     for (size_t i = 0; i < length_shorts; ++i) {
         if (offsets_raw[i] < 0)
             offsets[i] = {};
         else
-            offsets[i] = offsets_raw[i];
+            offsets[i] = static_cast<unsigned> (offsets_raw[i]);
     }
 
     return offsets;
@@ -178,21 +178,17 @@ parse_string_offsets_section (BeginIt& begin, EndIt& end, size_t length_shorts)
 // parses string table section of terminfo
 template <class BeginIt, class EndIt>
 std::vector<std::optional<std::string>>
-parse_string_table (BeginIt&                                   begin,
-                    EndIt&                                     end,
-                    const std::vector<std::optional<int16_t>>& offsets,
-                    size_t                                     length)
+parse_string_table (BeginIt&                                    begin,
+                    EndIt&                                      end,
+                    const std::vector<std::optional<uint16_t>>& offsets,
+                    size_t                                      length_bytes)
 {
-    using namespace mtinfo::internal::constants;
-
-    if (begin + length > end)
+    if (begin + length_bytes > end)
         throw mtinfo::ErrorEOF ("the string table");
 
-    std::vector<std::optional<std::string>> string_table (
-      TERMINFO_STRINGS_LENGTH);
-
-    const std::string strings_table_raw (begin, begin + length);
-    begin += length;
+    std::vector<std::optional<std::string>> string_table (offsets.size());
+    const std::string strings_table_raw (begin, begin + length_bytes);
+    begin += length_bytes;
 
     for (size_t i = 0; i < offsets.size(); ++i) {
         if (!offsets[i].has_value()) {
@@ -200,8 +196,7 @@ parse_string_table (BeginIt&                                   begin,
             continue;
         }
 
-        // note an offset should never ever be a negative value
-        if (static_cast<unsigned> (*offsets[i]) > length)
+        if (*offsets[i] > length_bytes)
             throw mtinfo::ErrorParsing (
               "string offset is larger than strings table");
 
@@ -211,17 +206,6 @@ parse_string_table (BeginIt&                                   begin,
 
     return string_table;
 }
-
-// template <class BeginIt, class EndIt>
-// void
-// parse_extended (
-//   BeginIt&                                                begin,
-//   EndIt&                                                  end,
-//   std::map<std::string_view, std::optional<bool>>&        bools_out,
-//   std::map<std::string_view, std::optional<int16_t>>&     numbers_out,
-//   std::map<std::string_view, std::optional<std::string>>& string_table_out)
-// {
-// }
 
 template <class BeginIt, class EndIt>
 mtinfo::Terminfo
@@ -253,21 +237,19 @@ parse_terminfo (BeginIt begin, EndIt end)
 
         const auto header = ::parse_header_section (begin, end);
 
-        const int16_t names_section_size_bytes        = header[0];
-        const int16_t bool_section_size_bytes         = header[1];
-        const int16_t num_section_size_shorts         = header[2];
-        const int16_t str_offsets_section_size_shorts = header[3];
-        const int16_t str_table_section_size_bytes    = header[4];
+        const int16_t names_size              = header[0];
+        const int16_t bools_size              = header[1];
+        const int16_t nums_size_shorts        = header[2];
+        const int16_t str_offsets_size_shorts = header[3];
+        const int16_t str_table_size          = header[4];
 
         // read the names
-        if (names_section_size_bytes > 0)
-            terminfo.names
-              = ::parse_names (begin, end, names_section_size_bytes);
+        if (names_size > 0)
+            terminfo.names = ::parse_names (begin, end, names_size);
 
         // -- bools --
-        if (bool_section_size_bytes > 0) {
-            auto bools_raw
-              = ::parse_bool_section (begin, end, bool_section_size_bytes);
+        if (bools_size > 0) {
+            auto bools_raw = ::parse_bool_section (begin, end, bools_size);
 
             // ensure no undefined bools are written
             if (bools_raw.size() > TERMINFO_BOOLEANS_LENGTH)
@@ -280,13 +262,13 @@ parse_terminfo (BeginIt begin, EndIt end)
 
         // for legacy reasons there's a padding byte if numbers start on a
         // uneven address
-        if ((names_section_size_bytes + bool_section_size_bytes) % 2 == 1)
+        if ((names_size + bools_size) % 2 == 1)
             ++begin;
 
         // -- numbers --
-        if (num_section_size_shorts > 0) {
+        if (nums_size_shorts > 0) {
             auto numbers_raw
-              = ::parse_numbers_section (begin, end, num_section_size_shorts);
+              = ::parse_numbers_section (begin, end, nums_size_shorts);
 
             // ensure no undefined numbers are written
             if (numbers_raw.size() > TERMINFO_NUMBERS_LENGTH)
@@ -298,21 +280,20 @@ parse_terminfo (BeginIt begin, EndIt end)
         }
 
         // -- strings --
-        if (str_offsets_section_size_shorts > 0) {
-            auto strings_offsets = ::parse_string_offsets_section (
-              begin,
-              end,
-              str_offsets_section_size_shorts);
+        if (str_offsets_size_shorts > 0) {
+            auto strings_offsets
+              = ::parse_string_offsets_section (begin,
+                                                end,
+                                                str_offsets_size_shorts);
 
             // ensure no undefined bools are written
             if (strings_offsets.size() > TERMINFO_STRINGS_LENGTH)
                 strings_offsets.resize (TERMINFO_STRINGS_LENGTH);
 
-            const auto string_table
-              = ::parse_string_table (begin,
-                                      end,
-                                      strings_offsets,
-                                      str_table_section_size_bytes);
+            const auto string_table = ::parse_string_table (begin,
+                                                            end,
+                                                            strings_offsets,
+                                                            str_table_size);
 
             // only write if there's anything to write
             if (string_table.size() > 0)
@@ -322,24 +303,24 @@ parse_terminfo (BeginIt begin, EndIt end)
         }
     }
 
+    // // parse extended ncurses table
     // if (begin < end) {
-    //     const auto extended_header = ::parse_ext_header (begin, end);
+    //     const auto extended_header = ::parse_header_section (begin, end);
 
-    //     // rename these variables same way as the ones above
-    //     const int16_t bool_section_size_bytes         = extended_header[0];
-    //     const int16_t num_section_size_shorts         = extended_header[1];
-    //     const int16_t str_offsets_section_size_shorts = extended_header[2];
-    //     const int16_t str_table_section_size_bytes    = extended_header[3];
-    //     const int16_t last_str_table_offset_bytes     = extended_header[4];
+    //     const int16_t num_of_ext_bools   = extended_header[0];
+    //     const int16_t num_of_ext_nums    = extended_header[1];
+    //     const int16_t num_of_ext_strings = extended_header[2];
+    //     const int16_t string_table_size  = extended_header[3];
+    //     const int16_t last_string_offset = extended_header[4];
 
     //     const auto bools
-    //       = ::parse_bool_section (begin, end, bool_section_size_bytes);
+    //       = ::parse_bool_section (begin, end, bools_size);
     //     const auto numbers
-    //       = ::parse_numbers_section (begin, end, num_section_size_shorts);
+    //       = ::parse_numbers_section (begin, end, nums_size_shorts);
     //     const auto str_offsets
     //       = ::parse_string_offsets_section (begin,
     //                                         end,
-    //                                         str_offsets_section_size_shorts);
+    //                                         str_offsets_size_shorts);
 
     //     // is this needed ???
     //     if (str_offsets.back() != last_str_table_offset_bytes)
@@ -351,7 +332,7 @@ parse_terminfo (BeginIt begin, EndIt end)
     //       = ::parse_string_table (begin,
     //                               end,
     //                               str_offsets,
-    //                               str_table_section_size_bytes);
+    //                               str_table_size);
     // }
 
     return terminfo;
