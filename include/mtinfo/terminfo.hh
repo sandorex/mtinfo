@@ -14,8 +14,8 @@
 
 #pragma once
 
+#include "mtinfo/export.hh"
 #include "mtinfo/terminfo_constants.hh"
-#include "mtinfo_export.h"
 
 #include <map>
 #include <optional>
@@ -84,10 +84,7 @@ namespace mtinfo
     };
 
     MTINFO_EXPORT Terminfo
-    parse_terminfo (const std::vector<uint8_t>& data);
-
-    MTINFO_EXPORT Terminfo
-    parse_terminfo (const uint8_t* data, size_t length);
+    parse_terminfo (const int8_t* data, size_t length);
 
     MTINFO_EXPORT Terminfo
     parse_terminfo_file (const std::string_view& path);

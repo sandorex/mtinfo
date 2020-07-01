@@ -19,19 +19,21 @@ project (mtinfo VERSION 0.1.0
                 LANGUAGES CXX)
 
 # TODO add option to embed all the terminfo files selected or found on the system
+# make an utility for this, make it pack all of it into an array for c and map
+# for c++
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Og")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+# TODO sort out the flags
+string (APPEND CMAKE_CXX_FLAGS_DEBUG " -Wall -Wextra -Wpedantic -ggdb3")
+string (APPEND CMAKE_CXX_FLAGS_RELEASE " -Wall -Wextra -Wpedantic -O3")
 
-string (APPEND CMAKE_CXX_FLAGS_DEBUG " -Wall -Wpedantic -fexceptions -Og -g3 -ggdb")
-string (APPEND CMAKE_CXX_FLAGS_RELEASE " -Wall -Wpedantic -fexceptions -O3")
+configure_file (src/version.hh.in ${PROJECT_BINARY_DIR}/include/mtinfo/version.hh)
 
-add_library (mtinfo src/terminfo.cc
-                    src/utils.cc)
+add_library (mtinfo src/cwrapper.cc
+                    src/terminfo_parser.cc)
 target_compile_features (mtinfo PUBLIC cxx_std_17)
 target_include_directories (mtinfo
     PUBLIC include/
-    PUBLIC ${PROJECT_BINARY_DIR}
+    PUBLIC ${PROJECT_BINARY_DIR}/include/
     PRIVATE src/)
 set_target_properties (mtinfo PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -41,6 +43,7 @@ set_target_properties (mtinfo PROPERTIES
     CXX_VISIBILITY_INLINES_HIDDEN ON)
 
 include(GenerateExportHeader)
-generate_export_header (mtinfo)
+generate_export_header (mtinfo
+    EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/include/mtinfo/export.hh)
 
 add_subdirectory (tests)

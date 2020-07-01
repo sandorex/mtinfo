@@ -14,12 +14,14 @@
 
 #pragma once
 
+#include "mtinfo/export.hh"
+
 #include <exception>
 #include <string>
 
 namespace mtinfo
 {
-    class Error : public std::exception
+    class MTINFO_EXPORT Error : public std::exception
     {
         const std::string _msg;
 
@@ -40,14 +42,14 @@ namespace mtinfo
         }
     };
 
-    struct ErrorParsing : public Error {
+    struct MTINFO_EXPORT ErrorParsing : public Error {
         ErrorParsing (const std::string_view& msg)
           : Error ("Error while parsing: " + std::string (msg))
         {
         }
     };
 
-    struct ErrorEOF : public ErrorParsing {
+    struct MTINFO_EXPORT ErrorEOF : public ErrorParsing {
         ErrorEOF (const std::string_view& section)
           : ErrorParsing ("reached EOF while parsing " + std::string (section))
         {
