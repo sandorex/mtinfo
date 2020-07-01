@@ -13,6 +13,8 @@
 ### Differences compared to terminfo standard
 There are couple differences when reading terminfo, while they are not that important i wanted to point them out
 
-- Bools are missing if the value is `-1`, but are false if they are less than or equal to `0` but true if they are more than `0`
+- There are no size limits whatsoever
 
-- Numbers are missing if their value is below `0`
+- Bools are false if the value is `<=0` and true if it is `>0`
+
+- Numbers are missing if the value is `-1` any other value is valid
