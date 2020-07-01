@@ -17,4 +17,4 @@ There are couple differences when reading terminfo, while they are not that impo
 
 - Bools are false if the value is `<=0` and true if it is `>0`
 
-- Numbers are missing if the value is `-1` any other value is valid
+- Numbers are missing if the value is `<0` any other value is valid
