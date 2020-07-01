@@ -26,19 +26,18 @@ namespace mtinfo
     Terminfo
     parse_terminfo (int8_t* begin, size_t length)
     {
-        // TODO save some debug info and the section sizes in the terminfo struct
-
         using namespace mtinfo::internal::constants;
 
         mtinfo::Terminfo terminfo;
 
         const auto end = begin + length;
 
-        if (begin >= end)
+        if (begin + 2 > end)
             throw mtinfo::ErrorEOF ("the magic number");
 
         // header must start with the magic number (don't ask just believe)
         if (i16_le (begin) != MAGIC_NUMBER)
+            // TODO add the magic number to error
             throw mtinfo::ErrorParsing ("invalid magic number");
 
         {
@@ -50,21 +49,33 @@ namespace mtinfo
             const int16_t str_offsets_size_shorts = header[3];
             const int16_t str_table_size          = header[4];
 
-            // read the names
-            if (names_size > 0)
-                terminfo.names = ::parse_names (begin, end, names_size);
+            if (names_size <= 0)
+                throw Error ("size of names section is zero or less");
+
+            // -- aliases & description --
+            {
+                auto names = ::parse_names (begin, end, names_size);
+
+                if (names.size() == 0)
+                    throw Error ("no name has been parsed");
+
+                if (names.size() > 1) {
+                    // last one should always be the description
+                    terminfo.description
+                      = *std::make_move_iterator (names.rbegin());
+                    names.pop_back();
+
+                    terminfo.aliases
+                      = std::vector (std::make_move_iterator (names.begin()),
+                                     std::make_move_iterator (names.end()));
+                } else
+                    terminfo.aliases = std::move (names);
+            }
 
             // -- bools --
             if (bools_size > 0) {
-                auto bools_raw = ::parse_bool_section (begin, end, bools_size);
-
-                // ensure size doesnt exceed number of defined booleans
-                if (bools_raw.size() > TERMINFO_BOOLEANS_LENGTH)
-                    bools_raw.resize (TERMINFO_BOOLEANS_LENGTH);
-
-                std::copy (bools_raw.cbegin(),
-                           bools_raw.cend(),
-                           terminfo.bools.begin());
+                auto bools     = ::parse_bool_section (begin, end, bools_size);
+                terminfo.bools = std::move (bools);
             }
 
             // for legacy reasons there's a padding byte if numbers start on a
@@ -74,81 +85,27 @@ namespace mtinfo
 
             // -- numbers --
             if (nums_size_shorts > 0) {
-                auto numbers_raw
+                auto numbers
                   = ::parse_numbers_section (begin, end, nums_size_shorts);
 
-                // ensure size doesnt exceed number of defined numbers
-                if (numbers_raw.size() > TERMINFO_NUMBERS_LENGTH)
-                    numbers_raw.resize (TERMINFO_NUMBERS_LENGTH);
-
-                std::copy (numbers_raw.cbegin(),
-                           numbers_raw.cend(),
-                           terminfo.numbers.begin());
+                terminfo.numbers = std::move (numbers);
             }
 
             // -- strings --
             if (str_offsets_size_shorts > 0) {
-                auto strings_offsets
+                const auto strings_offsets
                   = ::parse_string_offsets_section (begin,
                                                     end,
                                                     str_offsets_size_shorts);
 
-                // ensure size doesnt exceed number of defined strings
-                if (strings_offsets.size() > TERMINFO_STRINGS_LENGTH)
-                    strings_offsets.resize (TERMINFO_STRINGS_LENGTH);
+                auto string_table = ::parse_string_table (begin,
+                                                          end,
+                                                          strings_offsets,
+                                                          str_table_size);
 
-                const auto string_table = ::parse_string_table (begin,
-                                                                end,
-                                                                strings_offsets,
-                                                                str_table_size);
-
-                // only write if there's anything to write
-                if (string_table.size() > 0)
-                    std::copy (string_table.cbegin(),
-                               string_table.cend(),
-                               terminfo.strings.begin());
+                terminfo.strings = std::move (string_table);
             }
         }
-
-        // TODO mention in the exception that its parsing the extended info
-
-        // parse extended ncurses table
-        // if (begin < end) {
-        //     const auto extended_header = ::parse_header_section (begin, end);
-
-        //     const int16_t bools_size              = extended_header[0];
-        //     const int16_t nums_size_shorts        = extended_header[1];
-        //     const int16_t str_offsets_size_shorts = extended_header[2];
-
-        //     // the order of last two is confusing
-        //     const int16_t str_table_size  = extended_header[3];
-        //     const int16_t last_str_offset = extended_header[4];
-
-        //     const auto bools = ::parse_bool_section (begin, end, bools_size);
-
-        //     // for legacy reasons there's a padding byte if numbers start on a
-        //     // uneven address
-        //     if ((bools_size + 1) % 2 != 1)
-        //         ++begin;
-
-        //     const auto numbers
-        //       = ::parse_numbers_section (begin, end, nums_size_shorts);
-
-        //     const auto str_offsets
-        //       = ::parse_string_offsets_section (begin,
-        //                                         end,
-        //                                         str_offsets_size_shorts);
-
-        int _ = 0;
-        //     // // is this needed ???
-        //     // if (str_offsets.back() != last_str_table_offset_bytes)
-        //     //     throw std::runtime_error (
-        //     //       "last string table offset does not match between the extended "
-        //     //       "terminfo header and string offsets section");
-
-        //     // const auto string_table
-        //     //   = ::parse_string_table (begin, end, str_offsets, str_table_size);
-        // }
 
         return terminfo;
     }
@@ -225,12 +182,8 @@ parse_bool_section (int8_t*& begin, const int8_t* end, size_t length)
 
     std::vector<bool> buffer (length);
 
-    for (size_t i = 0; i < length; i++) {
-        const auto value = *begin++;
-        buffer[i]        = value > 0;
-        std::cout << "i: " << i << ", val: " << value << '\n';
-    }
-    // buffer[i] = *begin++ > 0;
+    for (size_t i = 0; i < length; i++)
+        buffer[i] = *begin++ > 0;
 
     return buffer;
 }
