@@ -24,7 +24,7 @@ terminfo_from_file (char* path)
 }
 
 Terminfo*
-terminfo_from_buffer (int8_t* buffer, size_t length)
+terminfo_from_buffer (uint8_t* buffer, size_t length)
 {
     return reinterpret_cast<Terminfo*> (
       new mtinfo::Terminfo (mtinfo::parse_terminfo (buffer, length)));

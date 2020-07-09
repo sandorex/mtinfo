@@ -28,9 +28,10 @@ namespace mtinfo
     class MTINFO_EXPORT Terminfo
     {
     public:
-        std::vector<std::string>                               aliases;
-        std::string                                            description;
-        std::vector<bool>                                      bools;
+        std::vector<std::string> aliases;
+        std::string              description;
+        std::vector<bool>        bools;
+        // TODO use uint8_t cause only the positive part is actually read
         std::vector<std::optional<uint16_t>>                   numbers;
         std::vector<std::optional<std::string>>                strings;
         std::map<std::string_view, std::optional<bool>>        extended_bools;
@@ -73,7 +74,7 @@ namespace mtinfo
     };
 
     MTINFO_EXPORT Terminfo
-    parse_terminfo (const int8_t* data, size_t length);
+    parse_terminfo (const uint8_t* data, size_t length);
 
     MTINFO_EXPORT Terminfo
     parse_terminfo_file (const std::string_view& path);

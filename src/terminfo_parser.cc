@@ -17,6 +17,7 @@
 #include "mtinfo/errors.hh"
 #include "mtinfo/terminfo.hh"
 
+#include <execution>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -24,7 +25,7 @@
 namespace mtinfo
 {
     Terminfo
-    parse_terminfo (int8_t* begin, size_t length)
+    parse_terminfo (uint8_t* begin, size_t length)
     {
         using namespace mtinfo::internal::constants;
 
@@ -48,6 +49,8 @@ namespace mtinfo
             const int16_t nums_size_shorts        = header[2];
             const int16_t str_offsets_size_shorts = header[3];
             const int16_t str_table_size          = header[4];
+
+            int _aa = 0;
 
             if (names_size <= 0)
                 throw Error ("size of names section is zero or less");
@@ -107,18 +110,82 @@ namespace mtinfo
             }
         }
 
+        // TODO mention in the exception that its parsing the extended info
+
+        // parse extended ncurses table
+        // if (begin < end) {
+        //     parse_extended_terminfo (begin,
+        //                              end,
+        //                              terminfo.extended_bools,
+        //                              terminfo.extended_numbers,
+        //                              terminfo.extended_strings);
+        //     //     const auto extended_header = ::parse_header_section (begin, end);
+
+        //     //     const int16_t bools_size              = extended_header[0];
+        //     //     const int16_t nums_size_shorts        = extended_header[1];
+        //     //     const int16_t str_offsets_size_shorts = extended_header[2];
+
+        //     //     // the order of last two is confusing
+        //     //     const int16_t str_table_size  = extended_header[4];
+        //     //     const int16_t last_str_offset = extended_header[3];
+
+        //     //     // -- bools --
+        //     //     if (bools_size > 0) {
+        //     //         auto bools = ::parse_bool_section (begin, end, bools_size);
+        //     //         int  _x    = 0;
+        //     //     }
+
+        //     //     // for legacy reasons there's a padding byte if numbers start on a
+        //     //     // uneven address
+        //     //     if ((bools_size + 1) % 2 != 1)
+        //     //         ++begin;
+
+        //     //     // -- numbers --
+        //     //     if (nums_size_shorts > 0) {
+        //     //         auto numbers
+        //     //           = ::parse_numbers_section (begin, end, nums_size_shorts);
+        //     //     }
+
+        //     //     // -- strings --
+        //     //     if (str_offsets_size_shorts > 0) {
+        //     //         const auto strings_offsets
+        //     //           = ::parse_string_offsets_section (begin,
+        //     //                                             end,
+        //     //                                             str_offsets_size_shorts);
+
+        //     //         int _y = 0;
+
+        //     //         auto string_table = ::parse_string_table (begin,
+        //     //                                                   end,
+        //     //                                                   strings_offsets,
+        //     //                                                   str_table_size);
+
+        //     //         int _x = 0;
+        //     //     }
+
+        //     //     // // is this needed ???
+        //     //     // if (str_offsets.back() != last_str_table_offset_bytes)
+        //     //     //     throw std::runtime_error (
+        //     //     //       "last string table offset does not match between the extended "
+        //     //     //       "terminfo header and string offsets section");
+
+        //     //     // const auto string_table
+        //     //     //   = ::parse_string_table (begin, end, str_offsets, str_table_size);
+        // }
+
         return terminfo;
     }
 
     Terminfo
     parse_terminfo_file (const std::string_view& path)
     {
+        // TODO limit file size somehow?
         std::ifstream file (path.data(), std::ios::binary);
         if (!file.good())
             throw Error ("File '" + std::string (path) + "' does not exist");
 
-        std::vector<int8_t> buffer { std::istreambuf_iterator<char> (file),
-                                     std::istreambuf_iterator<char>() };
+        std::vector<uint8_t> buffer { std::istreambuf_iterator<char> (file),
+                                      std::istreambuf_iterator<char>() };
 
         return parse_terminfo (buffer.data(), buffer.size());
     }
@@ -141,7 +208,7 @@ split (std::string input, const std::string_view& delimiter)
 }
 
 std::array<int16_t, 5>
-parse_header_section (int8_t*& begin, const int8_t* end)
+parse_header_section (uint8_t*& begin, const uint8_t* end)
 {
     if (begin + 5 > end)
         throw mtinfo::ErrorEOF ("the header");
@@ -150,7 +217,7 @@ parse_header_section (int8_t*& begin, const int8_t* end)
 }
 
 std::vector<std::string>
-parse_names (int8_t*& begin, const int8_t* end, size_t length)
+parse_names (uint8_t*& begin, const uint8_t* end, size_t length)
 {
     // names are delimited by char '|' and ended with null char ('\0'),
     //
@@ -167,7 +234,7 @@ parse_names (int8_t*& begin, const int8_t* end, size_t length)
 }
 
 std::vector<bool>
-parse_bool_section (int8_t*& begin, const int8_t* end, size_t length)
+parse_bool_section (uint8_t*& begin, const uint8_t* end, size_t length)
 {
     // bools are 1 byte signed integers where originally
     //      0 means that the capability is missing
@@ -189,7 +256,7 @@ parse_bool_section (int8_t*& begin, const int8_t* end, size_t length)
 }
 
 std::vector<std::optional<uint16_t>>
-parse_numbers_section (int8_t*& begin, const int8_t* end, size_t length)
+parse_numbers_section (uint8_t*& begin, const uint8_t* end, size_t length)
 {
     // numbers are signed shorts (2 bytes), any negative number is invalid
     // except -1 which means the number is not defined
@@ -212,60 +279,112 @@ parse_numbers_section (int8_t*& begin, const int8_t* end, size_t length)
     return numbers;
 }
 
-std::vector<std::optional<uint16_t>>
-parse_string_offsets_section (int8_t*&      begin,
-                              const int8_t* end,
-                              size_t        length_shorts)
+std::vector<bool>
+parse_string_offsets_section (uint8_t*&      begin,
+                              const uint8_t* end,
+                              size_t         length_shorts)
 {
     // offsets section contains short integers (2 bytes) that specify where a
     // string starts relative to start of the string table
     // negative offsets are invalid and -1 means the string isnt defined
     //
-    // I am simplifying this as everything else so an offset is undefined if
-    // it's < 0
+    // i've changed it to be a bool, it signifies if the string at the index
+    // is defined or not
 
     if (begin + (length_shorts * 2) > end)
         throw mtinfo::ErrorEOF ("the string offsets section");
 
-    std::vector<std::optional<uint16_t>> offsets (length_shorts);
+    std::vector<bool>    offsets (length_shorts);
     std::vector<int16_t> offsets_raw = ::i16_le (begin, length_shorts);
 
-    for (size_t i = 0; i < length_shorts; ++i) {
-        if (offsets_raw[i] < 0)
-            offsets[i] = {};
-        else
-            offsets[i] = static_cast<unsigned> (offsets_raw[i]);
-    }
+    for (size_t i = 0; i < length_shorts; ++i)
+        offsets[i] = offsets_raw[i] >= 0;
 
     return offsets;
 }
 
 std::vector<std::optional<std::string>>
-parse_string_table (int8_t*&                                    begin,
-                    const int8_t*                               end,
-                    const std::vector<std::optional<uint16_t>>& offsets,
-                    size_t                                      length_bytes)
+parse_string_table (uint8_t*&                begin,
+                    const uint8_t*           end,
+                    const std::vector<bool>& offsets,
+                    size_t                   length_bytes)
 {
+    // strings are gathered by using offsets from previous section that specify
+    // if the string exists, and if it does where does it start relative to
+    // start of the strings table
+    //
+    // offsets are not offsets anymore but simply signify if the string at the
+    // index exist at all
+
     if (begin + length_bytes > end)
         throw mtinfo::ErrorEOF ("the string table");
 
     std::vector<std::optional<std::string>> string_table (offsets.size());
-    const std::string strings_table_raw (begin, begin + length_bytes);
+    std::string str_table_raw (begin, begin + length_bytes);
     begin += length_bytes;
 
-    for (size_t i = 0; i < offsets.size(); ++i) {
-        if (!offsets[i].has_value()) {
-            string_table[i] = {};
-            continue;
+    {
+        auto begin = str_table_raw.begin();
+        auto end   = str_table_raw.end();
+
+        for (size_t i = 0; i < offsets.size(); ++i) {
+            if (!offsets[i]) {
+                string_table[i] = {};
+                continue;
+            }
+
+            // find the \0 char aka end of the string
+            auto null_ch_iter
+              = std::find (std::execution::par, begin, end, '\0');
+
+            if (null_ch_iter == end)
+                throw mtinfo::ErrorParsing (
+                  "null character not found in strings table (index "
+                  + std::to_string (i) + ")");
+
+            // populate the string table
+            string_table[i] = std::string (begin, null_ch_iter);
+
+            if (null_ch_iter + 1 <= end) {
+                begin = null_ch_iter + 1;
+                end   = str_table_raw.end();
+            } else
+                throw mtinfo::ErrorParsing (
+                  "the string table has less strings than requested ("
+                  + std::to_string (i) + " < " + std::to_string (offsets.size())
+                  + ")");
         }
-
-        if (*offsets[i] > length_bytes)
-            throw mtinfo::ErrorParsing (
-              "string offset is larger than strings table");
-
-        // std::string constructor finds the first \0 character
-        string_table[i] = std::string (strings_table_raw.data() + *offsets[i]);
     }
 
     return string_table;
 }
+
+// void
+// parse_extended_terminfo (
+//   uint8_t*&                                 begin,
+//   const uint8_t*                            end,
+//   std::map<std::string_view, bool>&        extended_bools,
+//   std::map<std::string_view, uint16_t>&    extended_numbers,
+//   std::map<std::string_view, std::string>& extended_strings);
+
+// // refractor to collect the strings by looking for the \0 char not offsets
+// std::vector<std::string>
+// parse_ext_string_table (uint8_t*&      begin,
+//                         const uint8_t* end,
+//                         size_t        count,
+//                         size_t        length_bytes)
+// {
+//     if (begin + length_bytes > end)
+//         throw mtinfo::ErrorEOF ("the string table");
+
+//     std::vector<std::optional<std::string>> string_table (count);
+//     const std::string strings_table_raw (begin, begin + length_bytes);
+//     begin += length_bytes;
+
+//     for (size_t i = 0; i < count; ++i) {
+//         // std::string constructor finds the first \0 character
+//         string_table[i] = std::string (strings_table_raw.data() + *offsets[i]);
+//     }
+
+//     return string_table;
+// }
