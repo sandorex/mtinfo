@@ -16,7 +16,9 @@
 
 #include "mtinfo/errors.hh"
 #include "mtinfo/terminfo.hh"
+#include "util.hh"
 
+#include <cassert>
 #include <execution>
 #include <fstream>
 #include <iostream>
@@ -49,8 +51,6 @@ namespace mtinfo
             const int16_t nums_size_shorts        = header[2];
             const int16_t str_offsets_size_shorts = header[3];
             const int16_t str_table_size          = header[4];
-
-            int _aa = 0;
 
             if (names_size <= 0)
                 throw Error ("size of names section is zero or less");
@@ -95,6 +95,7 @@ namespace mtinfo
             }
 
             // -- strings --
+            // TODO should this be table size instead ??
             if (str_offsets_size_shorts > 0) {
                 const auto strings_offsets
                   = ::parse_string_offsets_section (begin,
@@ -113,65 +114,12 @@ namespace mtinfo
         // TODO mention in the exception that its parsing the extended info
 
         // parse extended ncurses table
-        // if (begin < end) {
-        //     parse_extended_terminfo (begin,
-        //                              end,
-        //                              terminfo.extended_bools,
-        //                              terminfo.extended_numbers,
-        //                              terminfo.extended_strings);
-        //     //     const auto extended_header = ::parse_header_section (begin, end);
-
-        //     //     const int16_t bools_size              = extended_header[0];
-        //     //     const int16_t nums_size_shorts        = extended_header[1];
-        //     //     const int16_t str_offsets_size_shorts = extended_header[2];
-
-        //     //     // the order of last two is confusing
-        //     //     const int16_t str_table_size  = extended_header[4];
-        //     //     const int16_t last_str_offset = extended_header[3];
-
-        //     //     // -- bools --
-        //     //     if (bools_size > 0) {
-        //     //         auto bools = ::parse_bool_section (begin, end, bools_size);
-        //     //         int  _x    = 0;
-        //     //     }
-
-        //     //     // for legacy reasons there's a padding byte if numbers start on a
-        //     //     // uneven address
-        //     //     if ((bools_size + 1) % 2 != 1)
-        //     //         ++begin;
-
-        //     //     // -- numbers --
-        //     //     if (nums_size_shorts > 0) {
-        //     //         auto numbers
-        //     //           = ::parse_numbers_section (begin, end, nums_size_shorts);
-        //     //     }
-
-        //     //     // -- strings --
-        //     //     if (str_offsets_size_shorts > 0) {
-        //     //         const auto strings_offsets
-        //     //           = ::parse_string_offsets_section (begin,
-        //     //                                             end,
-        //     //                                             str_offsets_size_shorts);
-
-        //     //         int _y = 0;
-
-        //     //         auto string_table = ::parse_string_table (begin,
-        //     //                                                   end,
-        //     //                                                   strings_offsets,
-        //     //                                                   str_table_size);
-
-        //     //         int _x = 0;
-        //     //     }
-
-        //     //     // // is this needed ???
-        //     //     // if (str_offsets.back() != last_str_table_offset_bytes)
-        //     //     //     throw std::runtime_error (
-        //     //     //       "last string table offset does not match between the extended "
-        //     //     //       "terminfo header and string offsets section");
-
-        //     //     // const auto string_table
-        //     //     //   = ::parse_string_table (begin, end, str_offsets, str_table_size);
-        // }
+        if (begin < end)
+            parse_extended_terminfo (begin,
+                                     end,
+                                     terminfo.extended_bools,
+                                     terminfo.extended_numbers,
+                                     terminfo.extended_strings);
 
         return terminfo;
     }
@@ -314,7 +262,7 @@ parse_string_table (uint8_t*&                begin,
     // start of the strings table
     //
     // offsets are not offsets anymore but simply signify if the string at the
-    // index exist at all
+    // index exists at all
 
     if (begin + length_bytes > end)
         throw mtinfo::ErrorEOF ("the string table");
@@ -359,32 +307,80 @@ parse_string_table (uint8_t*&                begin,
     return string_table;
 }
 
-// void
-// parse_extended_terminfo (
-//   uint8_t*&                                 begin,
-//   const uint8_t*                            end,
-//   std::map<std::string_view, bool>&        extended_bools,
-//   std::map<std::string_view, uint16_t>&    extended_numbers,
-//   std::map<std::string_view, std::string>& extended_strings);
+void
+parse_extended_terminfo (
+  uint8_t*&                                begin,
+  const uint8_t*                           end,
+  std::map<std::string_view, bool>&        extended_bools,
+  std::map<std::string_view, uint16_t>&    extended_numbers,
+  std::map<std::string_view, std::string>& extended_strings)
+{
+    const auto extended_header = ::parse_header_section (begin, end);
 
-// // refractor to collect the strings by looking for the \0 char not offsets
-// std::vector<std::string>
-// parse_ext_string_table (uint8_t*&      begin,
-//                         const uint8_t* end,
-//                         size_t        count,
-//                         size_t        length_bytes)
-// {
-//     if (begin + length_bytes > end)
-//         throw mtinfo::ErrorEOF ("the string table");
+    const int16_t bools_size              = extended_header[0];
+    const int16_t nums_size_shorts        = extended_header[1];
+    const int16_t str_offsets_size_shorts = extended_header[2];
+    const int16_t str_table_length        = extended_header[3];
+    const int16_t str_table_size          = extended_header[4];
 
-//     std::vector<std::optional<std::string>> string_table (count);
-//     const std::string strings_table_raw (begin, begin + length_bytes);
-//     begin += length_bytes;
+    auto bools = ::parse_bool_section (begin, end, bools_size);
 
-//     for (size_t i = 0; i < count; ++i) {
-//         // std::string constructor finds the first \0 character
-//         string_table[i] = std::string (strings_table_raw.data() + *offsets[i]);
-//     }
+    // for legacy reasons there's a padding byte if numbers start on a
+    // uneven address
+    if ((bools_size + 1) % 2 != 1)
+        ++begin;
 
-//     return string_table;
-// }
+    std::vector<uint16_t> numbers;
+    {
+        auto numbers_raw
+          = ::parse_numbers_section (begin, end, nums_size_shorts);
+
+        if (!unpack_optional (numbers_raw, numbers))
+            throw mtinfo::Error (
+              "An empty number found in the extended numbers section");
+    }
+
+    // TODO remove if possible
+    // if (str_offsets_size_shorts > 0) {
+    auto str_offsets
+      = ::parse_string_offsets_section (begin, end, str_offsets_size_shorts);
+
+    // FIXME fuck me i do not know what hese 6 bytes are!
+    begin += (bools.size() + numbers.size() + str_offsets.size()) * 2;
+    // begin += 6;
+
+    std::vector<bool> offsets (str_table_length);
+    std::fill (offsets.begin(), offsets.end(), true);
+
+    std::vector<std::string> str_table (str_offsets.size());
+    std::vector<std::string> names_table (offsets.size() - str_offsets.size());
+
+    // parse full string table, split into the real string table and names table
+    {
+        auto table_raw_raw
+          = ::parse_string_table (begin, end, offsets, str_table_size);
+        std::vector<std::string> table_raw;
+
+        if (!unpack_optional (table_raw_raw, table_raw))
+            throw mtinfo::Error (
+              "An empty string found in the extended string table");
+
+        std::move (table_raw.begin(),
+                   table_raw.begin() + str_table.size(),
+                   str_table.begin());
+
+        std::move (table_raw.begin() + str_table.size(),
+                   table_raw.end(),
+                   names_table.begin());
+    }
+
+    int index = 0;
+    for (auto&& i : bools)
+        extended_bools.insert_or_assign (names_table.at (index++), i);
+
+    for (auto&& i : numbers)
+        extended_numbers.insert_or_assign (names_table.at (index++), i);
+
+    for (auto&& i : str_table)
+        extended_strings.insert_or_assign (names_table.at (index++), i);
+}

@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+add_executable (generate-terminfo generate-terminfo.cc)
+target_link_libraries (generate-terminfo mtinfo)
+
 add_executable (demo demo.cc)
 target_link_libraries (demo mtinfo)

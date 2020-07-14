@@ -32,11 +32,11 @@ namespace mtinfo
         std::string              description;
         std::vector<bool>        bools;
         // TODO use uint8_t cause only the positive part is actually read
-        std::vector<std::optional<uint16_t>>                   numbers;
-        std::vector<std::optional<std::string>>                strings;
-        std::map<std::string_view, std::optional<bool>>        extended_bools;
-        std::map<std::string_view, std::optional<uint16_t>>    extended_numbers;
-        std::map<std::string_view, std::optional<std::string>> extended_strings;
+        std::vector<std::optional<uint16_t>>    numbers;
+        std::vector<std::optional<std::string>> strings;
+        std::map<std::string_view, bool>        extended_bools;
+        std::map<std::string_view, uint16_t>    extended_numbers;
+        std::map<std::string_view, std::string> extended_strings;
 
         Terminfo() = default;
 
