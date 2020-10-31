@@ -1,0 +1,7 @@
+# contains extended capabilities of all times
+# values should be same as in ext-*.terminfo
+extended|Extended of all types,
+    bool,
+    number#6,
+    string=value,
+

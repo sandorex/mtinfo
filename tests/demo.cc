@@ -12,13 +12,97 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <iostream>
-#include <vector>
-#include <mtinfo/terminfo.hh>
+// #include "terminfo_parser.hh"
 
-int main() {
-    mtinfo::terminfo::parse_terminfo_file("test/t/test");
-    // mtinfo::terminfo::parse_terminfo_file("test/xterm-kitty");
+#include <cassert>
+#include <iostream>
+#include <mtinfo/errors.hh>
+#include <mtinfo/terminfo.hh>
+#include <vector>
+
+int
+main()
+{
+    // if (argc <= 1) {
+    //     std::cout << "please enter path to the terminfo file" << '\n';
+    //     return 1;
+    // }
+
+    using namespace mtinfo::internal::constants;
+
+    mtinfo::Terminfo terminfo;
+    // try {
+    terminfo = mtinfo::parse_terminfo_file ("test/output/e/extended");
+    // } catch (const std::exception& e) {
+    //     std::cerr << e.what() << '\n';
+    //     return 1;
+    // }
+
+    std::cout << "description: " << '\n' << terminfo.description << '\n';
+
+    std::cout << '\n' << "aliases (" << terminfo.aliases.size() << "):" << '\n';
+    for (auto&& i : terminfo.aliases) {
+        std::cout << "'" << i << "'" << '\n';
+    }
+
+    std::cout << '\n' << "bools (" << terminfo.bools.size() << "):" << '\n';
+    // for (size_t i = 0; i < terminfo.bools.size(); ++i) {
+    //     auto value = terminfo.bools.at (i);
+    //     if (!value)
+    //         continue;
+
+    //     if (i >= TERMINFO_BOOL_LEN)
+    //         std::cout << "unknown (" << std::to_string (i) << ")" << '='
+    //                   << value << '\n';
+    //     else
+    //         std::cout << TERMINFO_BOOL_NAMES_SHORT[i] << " ("
+    //                   << std::to_string (i) << ")" << '=' << value << '\n';
+    // }
+
+    std::cout << '\n' << "numbers (" << terminfo.numbers.size() << "):" << '\n';
+    // for (size_t i = 0; i < terminfo.numbers.size(); ++i) {
+    //     auto value = terminfo.numbers.at (i);
+    //     if (!value.has_value())
+    //         continue;
+
+    //     if (i >= TERMINFO_NUM_LEN)
+    //         std::cout << "unknown (" << std::to_string (i) << ")" << '='
+    //                   << value.value() << '\n';
+    //     else
+    //         std::cout << TERMINFO_NUM_NAMES_SHORT[i] << " ("
+    //                   << std::to_string (i) << ")" << '=' << value.value()
+    //                   << '\n';
+    // }
+
+    std::cout << '\n' << "strings (" << terminfo.strings.size() << "):" << '\n';
+    // for (size_t i = 0; i < terminfo.strings.size(); ++i) {
+    //     auto value = terminfo.strings.at (i);
+    //     if (!value.has_value())
+    //         continue;
+
+    //     if (i >= TERMINFO_STR_LEN)
+    //         std::cout << "unknown (" << std::to_string (i) << ")" << '='
+    //                   << value.value() << '\n';
+    //     else
+    //         std::cout << TERMINFO_STR_NAMES_SHORT[i] << " ("
+    //                   << std::to_string (i) << ")" << '=' << value.value()
+    //                   << '\n';
+    // }
+
+    std::cout << '\n' << "extended bools:" << '\n';
+    for (auto&& i : terminfo.extended_bools) {
+        std::cout << i.first << '\n';
+    }
+
+    std::cout << '\n' << "extended numbers:" << '\n';
+    for (auto&& i : terminfo.extended_numbers) {
+        std::cout << i.first << '=' << i.second << '\n';
+    }
+
+    std::cout << '\n' << "extended strings:" << '\n';
+    for (auto&& i : terminfo.extended_strings) {
+        std::cout << i.first << '=' << i.second << '\n';
+    }
+
     return 0;
 }
-

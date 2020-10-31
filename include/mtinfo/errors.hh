@@ -19,7 +19,7 @@
 #include <exception>
 #include <string>
 
-namespace mtinfo
+namespace mtinfo::error
 {
     class MTINFO_EXPORT Error : public std::exception
     {
@@ -42,17 +42,46 @@ namespace mtinfo
         }
     };
 
-    struct MTINFO_EXPORT ErrorParsing : public Error {
-        ErrorParsing (const std::string_view& msg)
+    // an error that happend while parsing
+    struct MTINFO_EXPORT ParsingError : public Error {
+        ParsingError (const std::string_view& msg)
           : Error ("Error while parsing: " + std::string (msg))
+        {
+        }
+
+    protected:
+        // constructor without any message prefix
+        ParsingError (const std::string_view& msg, int)
+          : Error (msg)
         {
         }
     };
 
-    struct MTINFO_EXPORT ErrorEOF : public ErrorParsing {
-        ErrorEOF (const std::string_view& section)
-          : ErrorParsing ("reached EOF while parsing " + std::string (section))
+    // error that happends if a section is invalid
+    struct MTINFO_EXPORT SectionError : public ParsingError {
+        SectionError (const std::string_view& msg)
+          : ParsingError ("Error while parsing " + std::string (msg)
+                            + " section",
+                          0)
         {
         }
     };
+
+    // error that happends if the parser reaches end of file before parsing
+    // enough information
+    struct MTINFO_EXPORT EOFError : public ParsingError {
+        EOFError (const std::string_view& section)
+          : ParsingError ("reached EOF while parsing " + std::string (section),
+                          0)
+        {
+        }
+    };
+} // namespace mtinfo::error
+
+// TODO switch to the new errors
+namespace mtinfo
+{
+    using Error        = error::Error;
+    using ErrorParsing = error::SectionError;
+    using ErrorEOF     = error::EOFError;
 } // namespace mtinfo

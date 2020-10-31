@@ -22,6 +22,14 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "type": "vgdb",
+            "request": "launch",
+            "name": "C/C++ Debug Launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "cwd": "${workspaceFolder}",
         }
     ]
 }

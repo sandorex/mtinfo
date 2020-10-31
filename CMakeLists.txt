@@ -12,25 +12,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.15)
 
 project (mtinfo VERSION 0.1.0
-                DESCRIPTION "mtinfo library, also supports terminfo"
+                DESCRIPTION "Modern terminfo library"
                 LANGUAGES CXX)
 
-# TODO add option to embed all the terminfo files selected or found on the system
-# make an utility for this, make it pack all of it into an array for c and map
-# for c++
+include (cmake/StandardProjectSettings.cmake)
+include (cmake/PreventInSourceBuilds.cmake)
 
-# TODO sort out the flags
-string (APPEND CMAKE_CXX_FLAGS_DEBUG " -Wall -Wextra -Wpedantic -ggdb3")
-string (APPEND CMAKE_CXX_FLAGS_RELEASE " -Wall -Wextra -Wpedantic -O3")
+add_library (project_options INTERFACE)
+target_compile_features (project_options INTERFACE cxx_std_17)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
+    option (ENABLE_BUILD_WITH_TIME_TRACE "Enable -ftime-trace to generate time tracing .json files on clang" OFF)
+    if (ENABLE_BUILD_WITH_TIME_TRACE)
+        add_compile_definitions (project_options INTERFACE -ftime-trace)
+    endif ()
+endif ()
+
+# Link this 'library' to use the warnings specified in CompilerWarnings.cmake
+add_library (project_warnings INTERFACE)
+
+# enable cache system
+include (cmake/Cache.cmake)
+
+# standard compiler warnings
+include (cmake/CompilerWarnings.cmake)
+set_project_warnings (project_warnings)
+
+# sanitizer options if supported by compiler
+include (cmake/Sanitizers.cmake)
+enable_sanitizers (project_options)
+
+# enable doxygen
+include (cmake/Doxygen.cmake)
+enable_doxygen ()
+
+# allow for static analysis options
+include (cmake/StaticAnalyzers.cmake)
+
+option (BUILD_SHARED_LIBS "Enable compilation of shared libraries" OFF)
+option (ENABLE_TESTING "Builds tests" ON)
+option (BUILD_EXAMPLES "Build examples" OFF)
+
+# so libfmt also uses the C++17 standard
+set (CMAKE_CXX_STANDARD 17)
+set (__CXX_STANDARD_BACKUP ${CMAKE_CXX_STANDARD})
+add_subdirectory (${PROJECT_SOURCE_DIR}/vendor/fmt)
+set (CMAKE_CXX_STANDARD ${__CXX_STANDARD_BACKUP})
 
 configure_file (src/version.hh.in ${PROJECT_BINARY_DIR}/include/mtinfo/version.hh)
-
 add_library (mtinfo src/cwrapper.cc
                     src/terminfo_parser.cc)
-target_compile_features (mtinfo PUBLIC cxx_std_17)
+
+target_link_libraries (mtinfo project_options project_warnings fmt::fmt)
 target_include_directories (mtinfo
     PUBLIC include/
     PUBLIC ${PROJECT_BINARY_DIR}/include/
@@ -42,8 +78,15 @@ set_target_properties (mtinfo PROPERTIES
     CXX_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_INLINES_HIDDEN ON)
 
-include(GenerateExportHeader)
+include (GenerateExportHeader)
 generate_export_header (mtinfo
     EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/include/mtinfo/export.hh)
 
-add_subdirectory (tests)
+if (ENABLE_TESTING)
+    enable_testing ()
+    add_subdirectory (tests)
+endif ()
+
+# TODO add option to embed all the terminfo files selected or found on the system
+# make an utility for this, make it pack all of it into an array for c and map
+# for c++

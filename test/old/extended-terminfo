@@ -1,0 +1,9 @@
+extended|extended terminfo,
+# standard
+    am,
+    colors#42,
+    acsc=abcd,
+# extended
+    bool,
+    num#69,
+    str=yes,

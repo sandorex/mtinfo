@@ -1,0 +1,40 @@
+# Specification mtinfo 20.6
+`mtinfo` is meant as a replacement for `terminfo`, meant to be easy to read written in JSON
+
+The path to look for `mtinfo` files is `$HOME/.mtinfo` (directory in the same place as the executable)
+
+For windows (by order):
+| Path                                  |
+| ------------------------------------- |
+| `mtinfo/` (folder of the executable)  |
+| `.mtinfo/` (folder of the executable) |
+| `MTINFO_DIRS` (env variable)          |
+| `$HOME/.mtinfo/`                      |
+
+
+Unix-like (by order):
+| Path                                  |
+| ------------------------------------- |
+| `mtinfo/` (folder of the executable)  |
+| `.mtinfo/` (folder of the executable) |
+| `MTINFO_DIRS` (env variable)          |
+| `/usr/share/mtinfo/`                  |
+| `$HOME/.local/share/mtinfo/`          |
+
+## Plan
+The plan is to have `mtinfo` be primary source of terminal capability while converting it to terminfo for the legacy applications
+
+## Example
+```json
+{
+    "base": "",         // name of the base
+    "names": [],        // list of names of the terminal
+    "capabilities": {}, // capabilities and their values
+    "aliases": {},      // aliases for capabilities
+    "booleans": [],     // capabilities that are booleans
+    "numbers": [],      // capabilities that are numbers
+    "strings": [],      // capabilities that are strings
+    "keys": {},         // keys and the code returned when they are pressed
+}
+```
+<!-- TODO ability to check if capability (any type) is defined and also alternative version which acts same as terminfo and undefined boolean is false -->

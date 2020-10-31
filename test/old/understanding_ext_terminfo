@@ -1,0 +1,7 @@
+from struct import unpack_from
+data = open('e/extended', 'rb').read()
+from collections import namedtuple
+header = namedtuple('Header', 'magic_number names_size bool_size num_count str_offset_count str_table_size')
+parsed_header = header._make(unpack_from('<6h', data))
+names = unpack_from(f'{parsed_header.names_size}s', data, 12)
+# everything else is empty

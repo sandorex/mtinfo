@@ -23,6 +23,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <utility>
 
 namespace mtinfo
 {
@@ -46,13 +47,18 @@ namespace mtinfo
         {
             const auto header = ::parse_header_section (begin, end);
 
-            const int16_t names_size              = header[0];
-            const int16_t bools_size              = header[1];
-            const int16_t nums_size_shorts        = header[2];
-            const int16_t str_offsets_size_shorts = header[3];
-            const int16_t str_table_size          = header[4];
+            for (auto&& i : header)
+                if (i < 0)
+                    throw mtinfo::Error ("negative number in the header");
 
-            if (names_size <= 0)
+            const uint8_t names_size       = static_cast<uint8_t> (header[0]);
+            const uint8_t bools_size       = static_cast<uint8_t> (header[1]);
+            const uint8_t nums_size_shorts = static_cast<uint8_t> (header[2]);
+            const uint8_t str_offsets_size_shorts
+              = static_cast<uint8_t> (header[3]);
+            const uint8_t str_table_size = static_cast<uint8_t> (header[4]);
+
+            if (names_size == 0)
                 throw Error ("size of names section is zero or less");
 
             // -- aliases & description --
@@ -272,8 +278,8 @@ parse_string_table (uint8_t*&                begin,
     begin += length_bytes;
 
     {
-        auto begin = str_table_raw.begin();
-        auto end   = str_table_raw.end();
+        auto raw_begin = str_table_raw.begin();
+        auto raw_end   = str_table_raw.end();
 
         for (size_t i = 0; i < offsets.size(); ++i) {
             if (!offsets[i]) {
@@ -283,19 +289,19 @@ parse_string_table (uint8_t*&                begin,
 
             // find the \0 char aka end of the string
             auto null_ch_iter
-              = std::find (std::execution::par, begin, end, '\0');
+              = std::find (std::execution::par, raw_begin, raw_end, '\0');
 
-            if (null_ch_iter == end)
+            if (null_ch_iter == raw_end)
                 throw mtinfo::ErrorParsing (
                   "null character not found in strings table (index "
                   + std::to_string (i) + ")");
 
             // populate the string table
-            string_table[i] = std::string (begin, null_ch_iter);
+            string_table[i] = std::string (raw_begin, null_ch_iter);
 
-            if (null_ch_iter + 1 <= end) {
-                begin = null_ch_iter + 1;
-                end   = str_table_raw.end();
+            if (null_ch_iter + 1 <= raw_end) {
+                raw_begin = null_ch_iter + 1;
+                raw_end   = str_table_raw.end();
             } else
                 throw mtinfo::ErrorParsing (
                   "the string table has less strings than requested ("
@@ -317,11 +323,16 @@ parse_extended_terminfo (
 {
     const auto extended_header = ::parse_header_section (begin, end);
 
-    const int16_t bools_size              = extended_header[0];
-    const int16_t nums_size_shorts        = extended_header[1];
-    const int16_t str_offsets_size_shorts = extended_header[2];
-    const int16_t str_table_length        = extended_header[3];
-    const int16_t str_table_size          = extended_header[4];
+    for (auto&& i : extended_header)
+        if (i < 0)
+            throw mtinfo::Error ("negative number in the extended header");
+
+    const uint8_t bools_size       = static_cast<uint8_t> (extended_header[0]);
+    const uint8_t nums_size_shorts = static_cast<uint8_t> (extended_header[1]);
+    const uint8_t str_offsets_size_shorts
+      = static_cast<uint8_t> (extended_header[2]);
+    const uint8_t str_table_length = static_cast<uint8_t> (extended_header[3]);
+    const uint8_t str_table_size   = static_cast<uint8_t> (extended_header[4]);
 
     auto bools = ::parse_bool_section (begin, end, bools_size);
 
@@ -340,20 +351,25 @@ parse_extended_terminfo (
               "An empty number found in the extended numbers section");
     }
 
-    // TODO remove if possible
+    // TODO
     // if (str_offsets_size_shorts > 0) {
-    auto str_offsets
-      = ::parse_string_offsets_section (begin, end, str_offsets_size_shorts);
 
-    // FIXME fuck me i do not know what hese 6 bytes are!
-    begin += (bools.size() + numbers.size() + str_offsets.size()) * 2;
-    // begin += 6;
+    // FIXME there is no check if the string is actaully defined, cause it can't
+    // be left undefined in extended ncurses table
 
-    std::vector<bool> offsets (str_table_length);
-    std::fill (offsets.begin(), offsets.end(), true);
+    // skip str offsets
+    begin += str_offsets_size_shorts * 2;
 
-    std::vector<std::string> str_table (str_offsets.size());
-    std::vector<std::string> names_table (offsets.size() - str_offsets.size());
+    // skip names str offsets (best guess, i do not actually know what this is)
+    begin += (bools.size() + numbers.size() + str_offsets_size_shorts) * 2;
+
+    std::vector<bool>        offsets (str_table_length, true);
+    std::vector<std::string> str_table (str_offsets_size_shorts);
+    std::vector<std::string> names_table (str_table_length
+                                          - str_offsets_size_shorts);
+
+    // <-- MEMORY ISSUE HERE
+    // im now fucking up the strings, im suspecting the unknown bytes above
 
     // parse full string table, split into the real string table and names table
     {
@@ -365,22 +381,26 @@ parse_extended_terminfo (
             throw mtinfo::Error (
               "An empty string found in the extended string table");
 
+        // FIXME TODO these static casts may cause issues for bigger vectors
         std::move (table_raw.begin(),
-                   table_raw.begin() + str_table.size(),
+                   table_raw.begin()
+                     + static_cast<signed> (str_table.capacity()),
                    str_table.begin());
 
-        std::move (table_raw.begin() + str_table.size(),
+        std::move (table_raw.begin()
+                     + static_cast<signed> (str_table.capacity()),
                    table_raw.end(),
                    names_table.begin());
     }
 
-    int index = 0;
+    size_t index = 0;
     for (auto&& i : bools)
-        extended_bools.insert_or_assign (names_table.at (index++), i);
+        extended_bools.insert_or_assign (std::move (names_table[index++]), i);
 
     for (auto&& i : numbers)
-        extended_numbers.insert_or_assign (names_table.at (index++), i);
+        extended_numbers.insert_or_assign (std::move (names_table[index++]), i);
 
     for (auto&& i : str_table)
-        extended_strings.insert_or_assign (names_table.at (index++), i);
+        extended_strings.insert_or_assign (std::move (names_table[index++]),
+                                           std::move (i));
 }

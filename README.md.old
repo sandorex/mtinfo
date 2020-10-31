@@ -1,0 +1,23 @@
+# mtinfo
+`mtinfo` (Modern tinfo) is meant as a replacement for terminfo's awful binary format with something more modern, like JSON
+
+The mtinfo will retain all the things terminfo has but there will also be additional features like:
+- Custom capabilities, support capabilities not embraced by the standard like `truecolor` support for example
+- Easily readable, it's easy to read JSON so why use a complex binary format, you don't even need a specific library to parse it!
+
+<!-- TODO add 'base' so it can extend another mtinfo file -->
+<!-- TODO standardised path to look for mtinfo files -->
+
+### Example xterm-256color
+```json
+{
+    "auto_left_margin": false,
+    "auto_right_margin": true,
+    "back_color_erase": true,
+    ""
+
+    "cap_enter_alternative_buffer": "\E[???"
+}
+```
+
+The point of the standard is for it to be very simple and easily readable

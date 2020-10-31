@@ -1,0 +1,5 @@
+firsts|Example with all first values,
+# these should be the same as in the first-*.terminfo files
+    bw,
+    cols#6,
+    cbt=first,
