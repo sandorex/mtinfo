@@ -63,8 +63,7 @@ add_subdirectory (${PROJECT_SOURCE_DIR}/vendor/fmt)
 set (CMAKE_CXX_STANDARD ${__CXX_STANDARD_BACKUP})
 
 configure_file (src/version.hh.in ${PROJECT_BINARY_DIR}/include/mtinfo/version.hh)
-add_library (mtinfo src/cwrapper.cc
-                    src/terminfo_parser.cc)
+add_library (mtinfo src/terminfo/ctinfo_parser.cc)
 
 target_link_libraries (mtinfo project_options project_warnings fmt::fmt)
 target_include_directories (mtinfo

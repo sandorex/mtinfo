@@ -1,4 +1,4 @@
-// Copyright 2020 Aleksandar Radivojević
+// Copyright 2020-2021 Aleksandar Radivojević
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -77,11 +77,3 @@ namespace mtinfo::error
         }
     };
 } // namespace mtinfo::error
-
-// TODO switch to the new errors
-namespace mtinfo
-{
-    using Error        = error::Error;
-    using ErrorParsing = error::SectionError;
-    using ErrorEOF     = error::EOFError;
-} // namespace mtinfo

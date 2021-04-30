@@ -1,5 +1,5 @@
 {
-    "editor.formatOnSave": true,
+    // "editor.formatOnSave": true,
     "files.associations": {
         "*.json": "jsonc",
         "*.h.in": "c",
@@ -55,8 +55,41 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "typeinfo": "cpp",
-        "csignal": "cpp"
+        "csignal": "cpp",
+        "list": "cpp",
+        "format": "cpp",
+        "xstring": "cpp",
+        "chrono": "cpp",
+        "cstring": "cpp",
+        "set": "cpp",
+        "ratio": "cpp",
+        "variant": "cpp",
+        "execution": "cpp",
+        "ios": "cpp",
+        "locale": "cpp",
+        "mutex": "cpp",
+        "queue": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp",
+        "xfacet": "cpp",
+        "xhash": "cpp",
+        "xiosbase": "cpp",
+        "xlocale": "cpp",
+        "xlocbuf": "cpp",
+        "xlocinfo": "cpp",
+        "xlocmes": "cpp",
+        "xlocmon": "cpp",
+        "xlocnum": "cpp",
+        "xloctime": "cpp",
+        "xmemory": "cpp",
+        "xstddef": "cpp",
+        "xtr1common": "cpp",
+        "xtree": "cpp",
+        "xutility": "cpp"
     },
+    "cmake.generator": "Ninja",
+    // "cmake.copyCompileCommands": "${workspaceFolder}",
+    "cmake.exportCompileCommandsFile": true,
     "cmake.configureArgs": [
         "-DWARNINGS_AS_ERRORS=OFF",
 
@@ -66,5 +99,10 @@
         // "-DENABLE_SANITIZER_ADDRESS=ON",
         // "-DENABLE_SANITIZER_LEAK=ON",
         // "-DENABLE_SANITIZER_UNDEFINED_BEHAVIOR=ON"
-    ]
+    ],
+    "clangd.arguments": [
+        "-background-index",
+        "-compile-commands-dir=build"
+    ],
+    "restructuredtext.languageServer.disabled": true,
 }

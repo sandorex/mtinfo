@@ -17,7 +17,7 @@
 #include <array>
 #include <string_view>
 
-namespace mtinfo::internal
+namespace mtinfo::terminfo
 {
     inline namespace constants
     {

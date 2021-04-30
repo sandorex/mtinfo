@@ -1,4 +1,4 @@
-// Copyright 2020 Aleksandar Radivojević
+// Copyright 2020-2021 Aleksandar Radivojević
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,28 +15,29 @@
 #pragma once
 
 #include "mtinfo/export.hh"
-#include "mtinfo/terminfo_constants.hh"
 
 #include <map>
 #include <optional>
 #include <string>
 #include <vector>
 
-namespace mtinfo
+namespace mtinfo::terminfo
 {
     // contains all the terminfo data
     class MTINFO_EXPORT Terminfo
     {
     public:
-        std::vector<std::string> aliases;
-        std::string              description;
-        std::vector<bool>        bools;
-        // TODO use uint8_t cause only the positive part is actually read
-        std::vector<std::optional<uint16_t>>    numbers;
+        std::vector<std::string>                aliases;
+        std::optional<std::string>              description;
+        std::vector<bool>                       bools;
+        // TODO make it unlimited size but allocate known number of options cause the
+        // terminfo may change in the future
+        std::vector<std::optional<int16_t>>    numbers;
         std::vector<std::optional<std::string>> strings;
         std::map<std::string_view, bool>        extended_bools;
-        std::map<std::string_view, uint16_t>    extended_numbers;
+        std::map<std::string_view, int16_t>    extended_numbers;
         std::map<std::string_view, std::string> extended_strings;
+        bool is_extended;
 
         Terminfo() = default;
 
@@ -51,6 +52,8 @@ namespace mtinfo
             this->extended_bools   = std::move (terminfo.extended_bools);
             this->extended_numbers = std::move (terminfo.extended_numbers);
             this->extended_strings = std::move (terminfo.extended_strings);
+
+            this->is_extended = terminfo.is_extended;
         }
 
         Terminfo&
@@ -69,13 +72,9 @@ namespace mtinfo
             this->extended_numbers = std::move (terminfo.extended_numbers);
             this->extended_strings = std::move (terminfo.extended_strings);
 
+            this->is_extended = terminfo.is_extended;
+
             return *this;
         }
     };
-
-    MTINFO_EXPORT Terminfo
-    parse_terminfo (const uint8_t* data, size_t length);
-
-    MTINFO_EXPORT Terminfo
-    parse_terminfo_file (const std::string_view& path);
 } // namespace mtinfo
