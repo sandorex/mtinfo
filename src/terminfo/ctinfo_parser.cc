@@ -79,7 +79,7 @@ namespace mtinfo::terminfo::parser {
         header.bools_count = iter.i16();
         header.numbers_count = iter.i16();
         header.strings_count = iter.i16();
-        header.property_name_count = iter.i16();
+        header.total_strings_count = iter.i16();
         header.last_string_offset = iter.i16();
 
         return header;
@@ -146,7 +146,7 @@ namespace mtinfo::terminfo::parser {
         return numbers;
     }
 
-    std::vector<std::optional<std::string>> parse_string_table (ByteIterator& iter, size_t offsets_length, size_t string_table_length) {
+    std::vector<std::optional<uint16_t>> parse_string_offsets(ByteIterator& iter, size_t count) {
         /* TODO */
         // offsets section contains short integers (2 bytes) that specify where a
         // string starts relative to start of the string table
@@ -155,19 +155,24 @@ namespace mtinfo::terminfo::parser {
         // i've changed it to be a bool, it signifies if the string at the index
         // is defined or not
 
-        if (iter.is_out_of_bounds<int16_t>(offsets_length))
+        if (iter.is_out_of_bounds<uint16_t>(count))
             throw mtinfo::error::EOFError ("the string offsets section");
 
-        std::vector<std::optional<int16_t>> offsets (offsets_length);
-        std::generate_n(offsets.begin(), offsets_length, [&]() -> std::optional<int16_t> {
+        std::vector<std::optional<uint16_t>> offsets (count);
+        std::generate_n(offsets.begin(), count, [&]() -> std::optional<uint16_t> {
             const auto value = iter.i16();
 
             if (value < 0)
                 return {};
 
-            return value;
+            return static_cast<uint16_t>(value);
         });
 
+        return offsets;
+    }
+
+    std::vector<std::optional<std::string>> parse_string_table (ByteIterator& iter, std::vector<std::optional<uint16_t>> offsets) {
+        /* TODO */
         // strings are gathered by using offsets from previous section that specify
         // if the string exists, and if it does where does it start relative to
         // start of the strings table
@@ -175,23 +180,38 @@ namespace mtinfo::terminfo::parser {
         // offsets are not offsets anymore but simply signify if the string at the
         // index exists at all
 
-        if (iter.is_out_of_bounds(string_table_length))
-            throw mtinfo::error::EOFError ("the string table");
-
         std::vector<std::optional<std::string>> string_table (offsets.size());
-        std::string str_table_raw (&iter, &(iter + string_table_length - 1)); // -1 is for the \0 character
-        iter += string_table_length;
 
+        // in case there is no offsets just skip everything
+        if (offsets.size() == 0)
+            return string_table;
+
+        ByteIterator iter_start, iter_end;
+
+        // iterates over offsets and collects strings until \0 character
+        // if it reached the end without finding the character an error will be thrown
         for (size_t i = 0; i < offsets.size(); ++i) {
             if (!offsets[i].has_value())
                 string_table[i] = {};
 
-            if (static_cast<size_t>(offsets[i].value()) > string_table_length)
-                throw mtinfo::error::ParsingError("Offset " + std::to_string(i) + " is out of bounds, this probably"
-                "means that one of the strings is not terminated properly");
+            bool found_end = false;
+            iter_start = iter + offsets[i].value();
+            iter_end = iter_start;
 
-            string_table[i] = std::string(str_table_raw, offsets[i].value());
+            while (!iter_end.is_out_of_bounds(1)) {
+                if (*iter_end++ == '\0') {
+                    found_end = true;
+                    string_table[i] = std::string(&iter_start, &iter_end - 1); // -1 is for '\0' character
+                    break;
+                }
+            }
+
+            if (!found_end)
+                throw error::ParsingError("Could not find the end of a string"); // TODO more clear error message?
         }
+
+        // advance the main iterator
+        iter = iter_end;
 
         return string_table;
     }
@@ -207,46 +227,58 @@ namespace mtinfo::terminfo::parser {
         else if (header.magic_number == MAGIC_NUMBER_16BIT)
             _32bit_mode = false;
         else
-            error::Error("Invalid magic number"); // TODO add it to the error message
+            throw error::Error("Invalid magic number"); // TODO add it to the error message
 
         // TODO check if header is proper, all values above zero
+
+        if (header.names_size <= 0 || header.bools_count < 0 || header.numbers_count < 0 || header.strings_table_size < 0)
+            throw error::Error("Invalid header values");
 
         // TODO figure out description, also check if names are valid
         terminfo.aliases = parse_names(iter, header.names_size);
 
-        terminfo.bools = parse_bool_section(iter, header.bools_count);
+        if (header.bools_count > 0)
+            terminfo.bools = parse_bool_section(iter, header.bools_count);
 
         iter.align_short_boundary();
 
-        terminfo.numbers = parse_numbers_section(iter, header.numbers_count);
+        if (header.numbers_count > 0)
+            terminfo.numbers = parse_numbers_section(iter, header.numbers_count);
 
-        terminfo.strings = parse_string_table(iter, header.offsets_count, header.strings_table_size);
+        if (header.offsets_count > 0) {
+            const auto string_offsets = parse_string_offsets(iter, header.offsets_count);
+            terminfo.strings = parse_string_table(iter, string_offsets);
+        }
 
         // parse extended if this is not eof
         if (parse_extended && !iter.is_out_of_bounds(1)) {
             terminfo.is_extended = true;
 
-        //     const ExtendedHeader ext_header = parse_extended_header_section(begin, end);
+            const ExtendedHeader ext_header = parse_extended_header_section(iter);
 
-        //     std::vector<bool> bools;
-        //     if (ext_header.bools_count > 0)
-        //         bools = parse_bool_section(begin, end, ext_header.bools_count);
+            // TODO check if header is valid
 
-        //     align_short_boundary(begin, end);
+            std::vector<bool> bools;
+            if (ext_header.bools_count > 0)
+                bools = parse_bool_section(iter, ext_header.bools_count);
 
-        //     std::vector<std::optional<int16_t>> numbers;
-        //     if (ext_header.numbers_count > 0)
-        //         numbers = parse_numbers_section(begin, end, ext_header.numbers_count);
+            iter.align_short_boundary();
 
-        //     std::vector<std::string> strings;
-        //     if (ext_header.strings_count > 0)
-        //         strings = parse_extended_string_table(begin, end, ext_header.strings_count, ext_header.last_string_offset);
+            std::vector<std::optional<int32_t>> numbers;
+            if (ext_header.numbers_count > 0)
+                numbers = parse_numbers_section(iter, ext_header.numbers_count);
 
-        //     // // const auto offsets = parse_string_offsets_section(begin, end, ext_header.);
-        //     // // const auto strings = parse_string_table(begin, end, offsets, header.strings_table_size);
+            const int prop_name_count = ext_header.total_strings_count - ext_header.strings_count;
 
-        //     // terminfo.numbers = numbers;
-        //     // (void)0;
+            const auto offsets_strings = parse_string_offsets(iter, ext_header.strings_count);
+            const auto offsets_prop_names = parse_string_offsets(iter, prop_name_count);
+
+            // TODO should these offsets be checked?
+
+            const auto strings = parse_string_table(iter, offsets_strings);
+            const auto prop_names = parse_string_table(iter, offsets_prop_names);
+
+            // TODO add everything to the struct
         }
 
         return terminfo;

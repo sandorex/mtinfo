@@ -15,6 +15,7 @@
 #pragma once
 
 #include "mtinfo/terminfo/ctinfo_parser_util.hh"
+#include <algorithm>
 #include <cstdint>
 #include <iterator>
 #include <stdexcept>
@@ -29,7 +30,11 @@ namespace mtinfo::terminfo::parser {
         size_t length;
         size_t position;
 
-        ByteIterator() = delete;
+        ByteIterator()
+            : start(nullptr),
+              length(0),
+              position(0)
+        {}
 
         ByteIterator(int8_t* start, size_t length, size_t position = 0)
             : start(start),
@@ -43,7 +48,7 @@ namespace mtinfo::terminfo::parser {
             return *(start + position);
         }
 
-        int8_t* operator&() {
+        int8_t* operator&() const {
             assert(position <= length);
 
             return start + position;
@@ -121,45 +126,6 @@ namespace mtinfo::terminfo::parser {
             return *this;
         }
     };
-
-    template <typename T>
-    inline char i8(T& iterator) {
-        return *(iterator++);
-    }
-
-    template <typename T>
-    inline int16_t i16(T& iterator) {
-        const auto a = *iterator++;
-        const auto b = *(iterator++);
-
-        // little endian short
-        return static_cast<int16_t> ((b << 8) | a);
-    }
-
-    template <typename T, typename K = char>
-    inline bool is_out_of_bounds(T& begin, T end, size_t amount = 1) {
-        const auto distance = std::distance(begin, end);
-        const int64_t size_bytes = sizeof(K) * amount;
-
-        return (distance - size_bytes) <= 0;
-    }
-
-    // checks if next byte is on short boundary, if it is then it advances one
-    // byte but only if the iterator is not at the end
-    //
-    // does not check if iterator is at the end if the next byte isn't on the boundary
-    template <typename T>
-    void align_short_boundary(T& begin, T end) {
-        const int distance = static_cast<signed>(std::distance(begin, end));
-
-        // this is yet another abomination
-        if ((distance - 1) % 2 > 0) {
-            if (distance - 1 <= 0)
-                return;
-
-            i8(begin);
-        }
-    }
 
     // splits string by a delimiter
     std::vector<std::string> split_string (std::string input, const std::string_view& delimiter);
