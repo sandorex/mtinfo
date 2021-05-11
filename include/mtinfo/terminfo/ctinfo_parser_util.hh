@@ -44,12 +44,14 @@ namespace mtinfo::terminfo::parser {
 
         int8_t operator*() {
             assert(position <= length);
+            assert(start != nullptr);
 
             return *(start + position);
         }
 
         int8_t* operator&() const {
             assert(position <= length);
+            assert(start != nullptr);
 
             return start + position;
         }
@@ -103,15 +105,16 @@ namespace mtinfo::terminfo::parser {
         }
 
         int16_t i16() {
-            const auto a = this->i8();
-            const auto b = this->i8();
+            // don't know why casting fucked me over here, but it did..
+            const auto a = static_cast<uint8_t>(this->i8());
+            const auto b = static_cast<uint8_t>(this->i8());
 
             return static_cast<int16_t> ((b << 8) | a);
         }
 
         int32_t i32() {
-            const auto a = this->i16();
-            const auto b = this->i16();
+            const auto a = static_cast<uint16_t>(this->i16());
+            const auto b = static_cast<uint16_t>(this->i16());
 
             return static_cast<int32_t> ((b << 8) | a);
         }

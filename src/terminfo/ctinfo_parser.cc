@@ -36,7 +36,7 @@ namespace mtinfo::terminfo::parser {
         return buffer;
     }
 
-    Terminfo parse_compiled_terminfo_file (const std::string_view& path) {
+    Terminfo parse_compiled_terminfo_file (const std::string_view& path, bool parse_extended_terminfo) {
         // TODO limit file size somehow?
         std::ifstream file (path.data(), std::ios::binary);
         if (!file.good())
@@ -45,7 +45,13 @@ namespace mtinfo::terminfo::parser {
         std::vector<int8_t> buffer { std::istreambuf_iterator<char> (file),
                                      std::istreambuf_iterator<char>() };
 
-        return parse_compiled_terminfo (ByteIterator(buffer.data(), buffer.size()));
+        // it reserves more memory for some reason, this is to save some
+        buffer.shrink_to_fit();
+
+        // data is in the buffer, file is no longer needed
+        file.close();
+
+        return parse_compiled_terminfo (ByteIterator(buffer.data(), buffer.size()), parse_extended_terminfo);
     }
 
     Header parse_header_section (ByteIterator& iter) {
@@ -191,8 +197,10 @@ namespace mtinfo::terminfo::parser {
         // iterates over offsets and collects strings until \0 character
         // if it reached the end without finding the character an error will be thrown
         for (size_t i = 0; i < offsets.size(); ++i) {
-            if (!offsets[i].has_value())
+            if (!offsets[i].has_value()) {
                 string_table[i] = {};
+                continue;
+            }
 
             bool found_end = false;
             iter_start = iter + offsets[i].value();
@@ -242,6 +250,7 @@ namespace mtinfo::terminfo::parser {
 
         iter.align_short_boundary();
 
+        // TODO 32bit mode
         if (header.numbers_count > 0)
             terminfo.numbers = parse_numbers_section(iter, header.numbers_count);
 
@@ -264,6 +273,7 @@ namespace mtinfo::terminfo::parser {
 
             iter.align_short_boundary();
 
+            // TODO should these also change for 32bit mode?
             std::vector<std::optional<int32_t>> numbers;
             if (ext_header.numbers_count > 0)
                 numbers = parse_numbers_section(iter, ext_header.numbers_count);
@@ -276,9 +286,38 @@ namespace mtinfo::terminfo::parser {
             // TODO should these offsets be checked?
 
             const auto strings = parse_string_table(iter, offsets_strings);
-            const auto prop_names = parse_string_table(iter, offsets_prop_names);
+            auto prop_names = parse_string_table(iter, offsets_prop_names);
 
-            // TODO add everything to the struct
+            size_t index = 0;
+
+            for (auto&& i : bools) {
+                if (index >= prop_names.size())
+                    throw error::ParsingError("Not enough property names found"); // TODO better error msg lul
+
+                assert(prop_names[index].has_value());
+
+                terminfo.extended_bools[prop_names[index++].value()] = i;
+            }
+
+            for (auto&& i : numbers) {
+                if (index >= prop_names.size())
+                    throw error::ParsingError("Not enough property names found"); // TODO better error msg lul
+
+                assert(prop_names[index].has_value());
+                assert(i.has_value());
+
+                terminfo.extended_numbers[prop_names[index++].value()] = i.value();
+            }
+
+            for (auto&& i : strings) {
+                if (index >= prop_names.size())
+                    throw error::ParsingError("Not enough property names found"); // TODO better error msg lul
+
+                assert(prop_names[index].has_value());
+                assert(i.has_value());
+
+                terminfo.extended_strings[prop_names[index++].value()] = i.value();
+            }
         }
 
         return terminfo;

@@ -32,9 +32,9 @@ namespace mtinfo::terminfo
         std::vector<bool>                       bools;
         std::vector<std::optional<int32_t>>     numbers;
         std::vector<std::optional<std::string>> strings;
-        std::map<std::string_view, bool>        extended_bools;
-        std::map<std::string_view, int32_t>     extended_numbers;
-        std::map<std::string_view, std::string> extended_strings;
+        std::map<std::string, bool>        extended_bools;
+        std::map<std::string, int32_t>     extended_numbers;
+        std::map<std::string, std::string> extended_strings;
         bool                                    is_extended;
 
         Terminfo()

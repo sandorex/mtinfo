@@ -67,7 +67,7 @@ namespace mtinfo::terminfo::parser {
     };
 
     MTINFO_EXPORT Terminfo
-    parse_compiled_terminfo_file (const std::string_view& path);
+    parse_compiled_terminfo_file (const std::string_view& path, bool parse_extended_terminfo = true);
 
     // parses terminfo header
     Header parse_header_section (ByteIterator& iter);
