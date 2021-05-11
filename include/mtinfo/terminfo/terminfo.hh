@@ -30,16 +30,24 @@ namespace mtinfo::terminfo
         std::vector<std::string>                aliases;
         std::optional<std::string>              description;
         std::vector<bool>                       bools;
-        // TODO make it unlimited size but allocate known number of options cause the
-        // terminfo may change in the future
-        std::vector<std::optional<int16_t>>    numbers;
+        std::vector<std::optional<int32_t>>     numbers;
         std::vector<std::optional<std::string>> strings;
         std::map<std::string_view, bool>        extended_bools;
-        std::map<std::string_view, int16_t>    extended_numbers;
+        std::map<std::string_view, int32_t>     extended_numbers;
         std::map<std::string_view, std::string> extended_strings;
-        bool is_extended;
+        bool                                    is_extended;
 
-        Terminfo() = default;
+        Terminfo()
+        :   aliases(),
+            description(),
+            bools(),
+            numbers(),
+            strings(),
+            extended_bools(),
+            extended_numbers(),
+            extended_strings(),
+            is_extended(false)
+        {}
 
         Terminfo (Terminfo&& terminfo)
         {
