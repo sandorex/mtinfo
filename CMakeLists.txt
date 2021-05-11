@@ -59,13 +59,12 @@ option (BUILD_EXAMPLES "Build examples" OFF)
 # so libfmt also uses the C++17 standard
 set (CMAKE_CXX_STANDARD 17)
 set (__CXX_STANDARD_BACKUP ${CMAKE_CXX_STANDARD})
-add_subdirectory (${PROJECT_SOURCE_DIR}/vendor/fmt)
 set (CMAKE_CXX_STANDARD ${__CXX_STANDARD_BACKUP})
 
 configure_file (src/version.hh.in ${PROJECT_BINARY_DIR}/include/mtinfo/version.hh)
 add_library (mtinfo src/terminfo/ctinfo_parser.cc)
 
-target_link_libraries (mtinfo project_options project_warnings fmt::fmt)
+target_link_libraries (mtinfo project_options project_warnings)
 target_include_directories (mtinfo
     PUBLIC include/
     PUBLIC ${PROJECT_BINARY_DIR}/include/
