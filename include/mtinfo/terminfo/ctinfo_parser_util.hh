@@ -26,7 +26,7 @@
 namespace mtinfo::terminfo::parser {
     class ByteIterator {
     public:
-        int8_t* start;
+        const int8_t* start;
         size_t length;
         size_t position;
 
@@ -36,7 +36,7 @@ namespace mtinfo::terminfo::parser {
               position(0)
         {}
 
-        ByteIterator(int8_t* start, size_t length, size_t position = 0)
+        ByteIterator(const int8_t* start, size_t length, size_t position = 0)
             : start(start),
               length(length),
               position(position)
@@ -49,7 +49,7 @@ namespace mtinfo::terminfo::parser {
             return *(start + position);
         }
 
-        int8_t* operator&() const {
+        const int8_t* operator&() const {
             assert(position <= length);
             assert(start != nullptr);
 

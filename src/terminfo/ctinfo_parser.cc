@@ -42,11 +42,10 @@ namespace mtinfo::terminfo::parser {
         if (!file.good())
             throw mtinfo::error::Error ("Error reading file '" + std::string (path) + "'");
 
-        std::vector<int8_t> buffer { std::istreambuf_iterator<char> (file),
-                                     std::istreambuf_iterator<char>() };
-
-        // it reserves more memory for some reason, this is to save some
-        buffer.shrink_to_fit();
+        // it unfortunately reserves about more memory than needed
+        // solution to make it not do that while still being const would be great
+        const std::vector<int8_t> buffer { std::istreambuf_iterator<char> (file),
+                                           std::istreambuf_iterator<char>() };
 
         // data is in the buffer, file is no longer needed
         file.close();
