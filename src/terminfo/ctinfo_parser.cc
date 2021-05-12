@@ -262,6 +262,8 @@ namespace mtinfo::terminfo::parser {
         if (parse_extended && !iter.is_out_of_bounds(1)) {
             terminfo.is_extended = true;
 
+            iter.align_short_boundary();
+
             const ExtendedHeader ext_header = parse_extended_header_section(iter);
 
             // TODO check if header is valid

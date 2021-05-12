@@ -123,7 +123,9 @@ namespace mtinfo::terminfo::parser {
             if (position % 2 > 0) {
                 const auto padding = i8();
 
-                assert(padding == 0x0); // TODO im pretty sure padding is always 0x0???
+                // this prevented so much headache it's unbelievable..
+                // padding should always be 0x0
+                assert(padding == 0x0);
             }
 
             return *this;

@@ -46,7 +46,7 @@ main()
 
     mtinfo::terminfo::Terminfo terminfo;
     try {
-        terminfo = parse_compiled_terminfo_file (path, true);
+        terminfo = parse_compiled_terminfo_file (path);
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';
         return 1;
@@ -90,16 +90,16 @@ main()
 
     std::cout << '\n' << "strings (" << terminfo.strings.size() << "):" << '\n';
     for (size_t i = 0; i < terminfo.strings.size(); ++i) {
-        auto value = terminfo.strings.at (i);
+        const auto value = terminfo.strings.at (i);
         if (!value.has_value())
             continue;
 
         if (i >= TERMINFO_STR_LEN)
             std::cout << "unknown (" << std::to_string (i) << ")" << '='
-                      << value.value() << '\n';
+                      << "REDACTED"/*value.value()*/ << '\n';
         else
             std::cout << TERMINFO_STR_NAMES_SHORT[i] << " ("
-                      << std::to_string (i) << ")" << '=' << value.value()
+                      << std::to_string (i) << ")" << '=' << "REDACTED"/*value.value()*/
                       << '\n';
     }
 
@@ -115,7 +115,7 @@ main()
 
     std::cout << '\n' << "extended strings:" << '\n';
     for (auto&& i : terminfo.extended_strings) {
-        std::cout << i.first << '=' << i.second << '\n';
+        std::cout << i.first << '=' << "REDACTED"/*i.second*/ << '\n';
     }
 
     return 0;
