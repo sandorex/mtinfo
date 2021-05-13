@@ -12,11 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// #include "terminfo_parser.hh"
-
-// #include <mtinfo/new_terminfo_parser.hh>
-// #include <mtinfo/errors.hh>
-
 #include <mtinfo/terminfo/ctinfo_parser_util.hh>
 #include <mtinfo/terminfo/terminfo.hh>
 #include <mtinfo/terminfo/ctinfo_parser.hh>
@@ -35,11 +30,12 @@ int
 main()
 {
     // TODO limit file size somehow?
+    const auto path = "F:\\Workspace\\mtinfo\\test\\output\\x\\xterm+256color";
     // const auto path = "F:\\Workspace\\mtinfo\\test\\old\\xterm-kitty";
     // const auto path = "F:\\Workspace\\mtinfo\\test\\output\\e\\extended-string-two";
     // const auto path = "F:\\Workspace\\mtinfo\\test\\output\\f\\firsts-n-extended";
     // const auto path = "F:\\Workspace\\mtinfo\\test\\output\\f\\firsts-n-extended-dd";
-    const auto path = "F:\\Workspace\\mtinfo\\test\\output\\f\\firsts";
+    // const auto path = "F:\\Workspace\\mtinfo\\test\\output\\f\\firsts";
     // const auto path = "F:\\Workspace\\mtinfo\\test\\output\\a\\all";
 
     using namespace mtinfo::terminfo::constants;
@@ -52,7 +48,7 @@ main()
         return 1;
     }
 
-    std::cout << "description: " << '\n' << terminfo.description.value_or("BLANK") << '\n';
+    std::cout << "name: " << '\n' << terminfo.name.value_or("BLANK") << '\n';
 
     std::cout << '\n' << "aliases (" << terminfo.aliases.size() << "):" << '\n';
     for (auto&& i : terminfo.aliases) {

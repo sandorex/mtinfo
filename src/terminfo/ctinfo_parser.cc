@@ -129,18 +129,19 @@ namespace mtinfo::terminfo::parser {
         return buffer;
     }
 
-    std::vector<std::optional<int32_t>> parse_numbers_section (ByteIterator& iter, size_t length) {
+    std::vector<std::optional<int32_t>> parse_numbers_section (ByteIterator& iter, size_t length, bool is_32bit) {
         /*
             numbers are signed shorts, any negative number is invalid, -1 means it's
             undefined but im not gonna bother
         */
-        // TODO 32bit mode
-        if (iter.is_out_of_bounds<int16_t>(length))
+
+        if ((is_32bit && iter.is_out_of_bounds<int32_t>(length))
+            || (!is_32bit && iter.is_out_of_bounds<int16_t>(length)))
             throw mtinfo::error::EOFError ("the numbers section");
 
         std::vector<std::optional<int32_t>> numbers(length);
         std::generate_n(numbers.begin(), length, [&]() -> std::optional<int32_t> {
-            const auto value = iter.i16();
+            const int32_t value = is_32bit ? iter.i32() : iter.i16();
 
             if (value >= 0)
                 return value;
@@ -225,14 +226,12 @@ namespace mtinfo::terminfo::parser {
 
     Terminfo parse_compiled_terminfo(ByteIterator iter, bool parse_extended) {
         Terminfo terminfo;
-        bool _32bit_mode = false; // TODO add mode to terminfo?
-
         const Header header = parse_header_section(iter);
 
         if (header.magic_number == MAGIC_NUMBER_32BIT)
-            _32bit_mode = true;
+            terminfo.is_32bit = true;
         else if (header.magic_number == MAGIC_NUMBER_16BIT)
-            _32bit_mode = false;
+            terminfo.is_32bit = false;
         else
             throw error::Error("Invalid magic number"); // TODO add it to the error message
 
@@ -244,14 +243,18 @@ namespace mtinfo::terminfo::parser {
         // TODO figure out description, also check if names are valid
         terminfo.aliases = parse_names(iter, header.names_size);
 
+        if (terminfo.aliases.size() > 1) {
+            terminfo.name = terminfo.aliases.back();
+            terminfo.aliases.pop_back();
+        }
+
         if (header.bools_count > 0)
             terminfo.bools = parse_bool_section(iter, header.bools_count);
 
         iter.align_short_boundary();
 
-        // TODO 32bit mode
         if (header.numbers_count > 0)
-            terminfo.numbers = parse_numbers_section(iter, header.numbers_count);
+            terminfo.numbers = parse_numbers_section(iter, header.numbers_count, terminfo.is_32bit);
 
         if (header.offsets_count > 0) {
             const auto string_offsets = parse_string_offsets(iter, header.offsets_count);
@@ -277,7 +280,7 @@ namespace mtinfo::terminfo::parser {
             // TODO should these also change for 32bit mode?
             std::vector<std::optional<int32_t>> numbers;
             if (ext_header.numbers_count > 0)
-                numbers = parse_numbers_section(iter, ext_header.numbers_count);
+                numbers = parse_numbers_section(iter, ext_header.numbers_count, terminfo.is_32bit);
 
             const int prop_name_count = ext_header.total_strings_count - ext_header.strings_count;
 

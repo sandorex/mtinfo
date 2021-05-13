@@ -27,41 +27,44 @@ namespace mtinfo::terminfo
     class MTINFO_EXPORT Terminfo
     {
     public:
+        std::optional<std::string>              name;
         std::vector<std::string>                aliases;
-        std::optional<std::string>              description;
         std::vector<bool>                       bools;
         std::vector<std::optional<int32_t>>     numbers;
         std::vector<std::optional<std::string>> strings;
-        std::map<std::string, bool>        extended_bools;
-        std::map<std::string, int32_t>     extended_numbers;
-        std::map<std::string, std::string> extended_strings;
+        std::map<std::string, bool>             extended_bools;
+        std::map<std::string, int32_t>          extended_numbers;
+        std::map<std::string, std::string>      extended_strings;
         bool                                    is_extended;
+        bool                                    is_32bit;
 
         Terminfo()
-        :   aliases(),
-            description(),
+        :   name(),
+            aliases(),
             bools(),
             numbers(),
             strings(),
             extended_bools(),
             extended_numbers(),
             extended_strings(),
-            is_extended(false)
+            is_extended(false),
+            is_32bit(false)
         {}
 
         Terminfo (Terminfo&& terminfo)
         {
-            this->aliases     = std::move (terminfo.aliases);
-            this->description = std::move (terminfo.description);
-            this->bools       = std::move (terminfo.bools);
-            this->numbers     = std::move (terminfo.numbers);
-            this->strings     = std::move (terminfo.strings);
+            this->name      = std::move (terminfo.name);
+            this->aliases   = std::move (terminfo.aliases);
+            this->bools     = std::move (terminfo.bools);
+            this->numbers   = std::move (terminfo.numbers);
+            this->strings   = std::move (terminfo.strings);
 
             this->extended_bools   = std::move (terminfo.extended_bools);
             this->extended_numbers = std::move (terminfo.extended_numbers);
             this->extended_strings = std::move (terminfo.extended_strings);
 
-            this->is_extended = terminfo.is_extended;
+            this->is_extended   = terminfo.is_extended;
+            this->is_32bit      = terminfo.is_32bit;
         }
 
         Terminfo&
@@ -70,17 +73,18 @@ namespace mtinfo::terminfo
             if (this == &terminfo)
                 return *this;
 
-            this->aliases     = std::move (terminfo.aliases);
-            this->description = std::move (terminfo.description);
-            this->bools       = std::move (terminfo.bools);
-            this->numbers     = std::move (terminfo.numbers);
-            this->strings     = std::move (terminfo.strings);
+            this->name      = std::move (terminfo.name);
+            this->aliases   = std::move (terminfo.aliases);
+            this->bools     = std::move (terminfo.bools);
+            this->numbers   = std::move (terminfo.numbers);
+            this->strings   = std::move (terminfo.strings);
 
             this->extended_bools   = std::move (terminfo.extended_bools);
             this->extended_numbers = std::move (terminfo.extended_numbers);
             this->extended_strings = std::move (terminfo.extended_strings);
 
-            this->is_extended = terminfo.is_extended;
+            this->is_extended   = terminfo.is_extended;
+            this->is_32bit      = terminfo.is_32bit;
 
             return *this;
         }

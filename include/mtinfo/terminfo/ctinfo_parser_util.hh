@@ -116,7 +116,7 @@ namespace mtinfo::terminfo::parser {
             const auto a = static_cast<uint16_t>(this->i16());
             const auto b = static_cast<uint16_t>(this->i16());
 
-            return static_cast<int32_t> ((b << 8) | a);
+            return static_cast<int32_t> ((b << 16) | a);
         }
 
         ByteIterator& align_short_boundary() {
