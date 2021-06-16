@@ -12,14 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <mtinfo/errors.hh>
-#include <mtinfo/terminfo/ctinfo_parser_util.hh>
+#define _CRT_SECURE_NO_WARNINGS
+
+#include "mtinfo/errors.hh"
+#include "mtinfo/terminfo/ctinfo_parser_util.hh"
 #include "mtinfo/terminfo/ctinfo_parser.hh"
 #include "mtinfo/terminfo/terminfo.hh"
 
+#include <cstdlib>
 #include <string>
 #include <fstream>
 #include <algorithm>
+#include <filesystem>
+
+using namespace std::literals::string_view_literals;
 
 namespace mtinfo::terminfo::parser {
     std::vector<std::string> split_string (std::string input, const std::string_view& delimiter) {
@@ -34,6 +40,14 @@ namespace mtinfo::terminfo::parser {
         buffer.push_back (input);
 
         return buffer;
+    }
+
+    std::optional<std::string> get_env(const std::string_view& key) {
+        const auto pointer = std::getenv(key.data());
+        if (pointer != nullptr)
+            return std::string(pointer);
+
+        return {};
     }
 
     Terminfo parse_compiled_terminfo_file (const std::string_view& path, bool parse_extended_terminfo) {
@@ -51,6 +65,82 @@ namespace mtinfo::terminfo::parser {
         file.close();
 
         return parse_compiled_terminfo (ByteIterator(buffer.data(), buffer.size()), parse_extended_terminfo);
+    }
+
+    std::optional<Terminfo> parse_compiled_terminfo_from_directory (const std::string_view& directory, const std::string_view& name, bool parse_extended_terminfo) {
+        using std::filesystem::path;
+        using std::filesystem::is_directory;
+        using std::filesystem::is_regular_file;
+
+        const path dir(directory);
+
+        // TODO: global define for env names
+        const std::string terminfo_name { name.empty() ? get_env("TERM").value_or("") : name };
+
+        // NOTE: is_directory is false if the path does not exist
+        if (!is_directory(dir) || terminfo_name.empty())
+            return {}; // the path is not a directory, does not exist or the name is empty
+
+        // compiled terminfo files are stored in directory with name of the first character
+        const auto letter_dir = dir / name.substr(0, 1);
+
+        // check if directory with first character of the name exists
+        if (!is_directory(letter_dir))
+            return {};
+
+        const auto file_path = letter_dir / terminfo_name;
+
+        if (!is_regular_file(file_path))
+            return {};
+
+        return parse_compiled_terminfo_file(file_path.string(), parse_extended_terminfo);
+    }
+
+    std::optional<Terminfo> parse_compiled_terminfo_from_env(const std::string_view& name, bool parse_extended_terminfo) {
+        using std::filesystem::path;
+
+        // prefer the supplied name over the environ one
+        auto terminfo_name = name;
+        if (terminfo_name.empty())
+            terminfo_name = get_env("TERM").value_or("");
+
+        // the terminfo name cannot be empty
+        if (terminfo_name.empty())
+            return {};
+
+        // check the $TERMINFO
+        const auto terminfo_dir = get_env("TERMINFO");
+        if (terminfo_dir.has_value()) {
+            auto result = parse_compiled_terminfo_from_directory(terminfo_name, terminfo_dir.value(), parse_extended_terminfo);
+
+            if (result.has_value())
+                return result;
+        }
+
+        // check the $HOME/.terminfo
+        const auto home_dir = get_env("HOME");
+        if (home_dir.has_value()) {
+            auto result = parse_compiled_terminfo_from_directory(terminfo_name, (path(terminfo_name) / ".terminfo").string(), parse_extended_terminfo);
+
+            if (result.has_value())
+                return result;
+        }
+
+        // TODO: colon seperated list..
+        // empty directory name means compiled-in default location @TERMINFO@
+
+        // check the $TERMINFO_DIRS
+        // const auto terminfo_dirs = get_env("TERMINFO_DIRS");
+        // if (home_dir.has_value()) {
+        //     result = parse_compiled_terminfo_from_directory((path(terminfo_name) / ".terminfo").string(), home_dir.value(), parse_extended_terminfo);
+
+        //     if (result.has_value())
+        //         return result;
+        // }
+
+        // check compiled-in paths @TERMINFO_DIRS@ and @TERMINFO@
+
+        return {};
     }
 
     Header parse_header_section (ByteIterator& iter) {
@@ -326,4 +416,8 @@ namespace mtinfo::terminfo::parser {
 
         return terminfo;
     }
+}
+
+namespace mtinfo::terminfo {
+    using parser::parse_compiled_terminfo_from_env;
 }

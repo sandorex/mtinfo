@@ -1,0 +1,9 @@
+# same as firsts-extended but has one more byte so that the address is shifted by one
+firsts-n-extended-dd|Extended of all types,
+    bw,
+    cols#6,
+    cbt=first,
+    bool,
+    number#6,
+    string=value,
+

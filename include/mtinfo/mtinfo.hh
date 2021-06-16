@@ -15,3 +15,14 @@
 #pragma once
 
 // #include "mtinfo/terminfo.hh"
+
+// #include "mtinfo/terminfo/terminfo.hh"
+#include "mtinfo/terminfo/ctinfo_parser.hh"
+#include "mtinfo/terminfo/terminfo.hh"
+
+namespace mtinfo {
+    using terminfo::Terminfo;
+    using terminfo::parser::parse_compiled_terminfo_file;
+    // TODO function that loads terminfo from folder
+    // function that loads terminfo using environ TERMINFO
+}

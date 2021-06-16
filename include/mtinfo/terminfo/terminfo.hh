@@ -16,9 +16,11 @@
 
 #include "mtinfo/export.hh"
 
+#include <functional>
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace mtinfo::terminfo
@@ -87,6 +89,55 @@ namespace mtinfo::terminfo
             this->is_32bit      = terminfo.is_32bit;
 
             return *this;
+        }
+
+        bool get_bool(size_t index, bool default_value = false) const {
+            if (index >= this->bools.size())
+                return default_value;
+
+            return this->bools.at(index);
+        }
+
+        std::optional<int32_t> get_number(size_t index, std::optional<int32_t> default_value = {}) const {
+            if (index >= this->numbers.size())
+                return default_value;
+
+            return this->numbers.at(index);
+        }
+
+        std::optional<std::string_view> get_string(size_t index, std::optional<std::string_view> default_value = {}) const {
+            if (index >= this->strings.size())
+                return default_value;
+
+            auto item = this->strings.at(index);
+            if (item.has_value())
+                return std::string_view(item.value());
+            else
+                return default_value;
+        }
+
+        std::optional<bool> get_extended_bool(const std::string& prop_name, std::optional<bool> default_value = {}) const {
+            auto it = this->extended_bools.find(prop_name);
+            if (it != this->extended_bools.end())
+                return it->second;
+
+            return default_value;
+        }
+
+        std::optional<int32_t> get_extended_number(const std::string& prop_name, std::optional<int32_t> default_value = {}) const {
+            auto it = this->extended_numbers.find(prop_name);
+            if (it != this->extended_numbers.end())
+                return it->second;
+
+            return default_value;
+        }
+
+        std::optional<std::string_view> get_extended_string(const std::string& prop_name, std::optional<std::string_view> default_value = {}) const {
+            auto it = this->extended_strings.find(prop_name);
+            if (it != this->extended_strings.end())
+                return std::string_view(it->second);
+
+            return default_value;
         }
     };
 } // namespace mtinfo

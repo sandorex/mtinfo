@@ -1,0 +1,10 @@
+# contains extended capabilities of all types and firsts
+# values should be same as in ext-*.terminfo and first-*.terminfo files
+firsts-n-extended|Extended of all types,
+    bw,
+    cols#6,
+    cbt=first,
+    bool,
+    number#6,
+    string=value,
+

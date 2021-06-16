@@ -69,6 +69,16 @@ namespace mtinfo::terminfo::parser {
     MTINFO_EXPORT Terminfo
     parse_compiled_terminfo_file (const std::string_view& path, bool parse_extended_terminfo = true);
 
+    /// tries to find terminfo in directory
+    MTINFO_EXPORT std::optional<Terminfo>
+    parse_compiled_terminfo_from_directory (const std::string_view& directory, const std::string_view& name = "", bool parse_extended_terminfo = true);
+
+    /// tries to find terminfo in common paths
+    /// if it cannot be found it returns std::nullopt if there is any problem reading, parsing it
+    /// then an exception will be thrown
+    MTINFO_EXPORT std::optional<Terminfo>
+    parse_compiled_terminfo_from_env(const std::string_view& name = "", bool parse_extended_terminfo = true);
+
     // parses terminfo header
     Header parse_header_section (ByteIterator& iter);
 

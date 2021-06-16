@@ -14,7 +14,11 @@
 
 #pragma once
 
+#include "mtinfo/terminfo/terminfo_constants.hh"
+
+#include <algorithm>
 #include <array>
+#include <optional>
 #include <string_view>
 
 namespace mtinfo::terminfo
@@ -69,6 +73,38 @@ namespace mtinfo::terminfo
         };
         constexpr size_t TERMINFO_BOOL_LEN
           = std::size (TERMINFO_BOOL_NAMES_LONG);
+
+        constexpr std::optional<std::string_view> get_bool_prop_name_long(size_t index) {
+            if (index > TERMINFO_BOOL_LEN)
+                return {};
+
+            return TERMINFO_BOOL_NAMES_LONG[index];
+        }
+
+        constexpr std::optional<std::string_view> get_bool_prop_name_short(size_t index) {
+            if (index > TERMINFO_BOOL_LEN)
+                return {};
+
+            return TERMINFO_BOOL_NAMES_SHORT[index];
+        }
+
+        constexpr std::optional<size_t> get_bool_prop_index(std::string_view name) {
+            // NOTE: std::find isn't constexpr yet so i am using loops here..
+
+            auto it_end = TERMINFO_BOOL_NAMES_LONG + TERMINFO_BOOL_LEN;
+            for (auto it = TERMINFO_BOOL_NAMES_LONG; it < it_end; ++it) {
+                if (*it == name)
+                    return std::distance(it, it_end) + 1; // why +1 i don't know
+            }
+
+            it_end = TERMINFO_BOOL_NAMES_SHORT + TERMINFO_BOOL_LEN;
+            for (auto it = TERMINFO_BOOL_NAMES_SHORT; it < it_end; ++it) {
+                if (*it == name)
+                    return std::distance(it, it_end) + 1; // why +1 i don't know
+            }
+
+            return {};
+        }
 
         constexpr std::string_view TERMINFO_NUM_NAMES_LONG[] {
             "columns",
