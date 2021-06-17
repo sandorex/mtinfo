@@ -51,15 +51,29 @@ namespace mtinfo::terminfo::parser {
     }
 
     Terminfo parse_compiled_terminfo_file (const std::string_view& path, bool parse_extended_terminfo) {
-        // TODO limit file size somehow?
+        namespace fs = std::filesystem;
+
+        if (!fs::is_regular_file(path))
+            throw error::Error("The file does not exist"); // TODO: another error type? better msg?
+
+        auto file_size = fs::file_size(path);
+
+        if (file_size > 10000)
+            throw error::Error("The file is larger than 10Kb"); // TODO: better error, distinct type
+
         std::ifstream file (path.data(), std::ios::binary);
         if (!file.good())
             throw mtinfo::error::Error ("Error reading file '" + std::string (path) + "'");
 
-        // it unfortunately reserves about more memory than needed
-        // solution to make it not do that while still being const would be great
-        const std::vector<int8_t> buffer { std::istreambuf_iterator<char> (file),
-                                           std::istreambuf_iterator<char>() };
+        // this may be overdoing it but i want to keep it const and not keep useless memory
+        const std::vector<int8_t> buffer = [&]{
+            std::vector<int8_t> x((std::istreambuf_iterator<char> (file)),
+                                   std::istreambuf_iterator<char>());
+
+            x.shrink_to_fit();
+
+            return x;
+        }();
 
         // data is in the buffer, file is no longer needed
         file.close();
@@ -68,36 +82,34 @@ namespace mtinfo::terminfo::parser {
     }
 
     std::optional<Terminfo> parse_compiled_terminfo_from_directory (const std::string_view& directory, const std::string_view& name, bool parse_extended_terminfo) {
-        using std::filesystem::path;
-        using std::filesystem::is_directory;
-        using std::filesystem::is_regular_file;
+        namespace fs = std::filesystem;
 
-        const path dir(directory);
+        const fs::path dir(directory);
 
         // TODO: global define for env names
         const std::string terminfo_name { name.empty() ? get_env("TERM").value_or("") : name };
 
         // NOTE: is_directory is false if the path does not exist
-        if (!is_directory(dir) || terminfo_name.empty())
+        if (!fs::is_directory(dir) || terminfo_name.empty())
             return {}; // the path is not a directory, does not exist or the name is empty
 
         // compiled terminfo files are stored in directory with name of the first character
         const auto letter_dir = dir / name.substr(0, 1);
 
         // check if directory with first character of the name exists
-        if (!is_directory(letter_dir))
+        if (!fs::is_directory(letter_dir))
             return {};
 
         const auto file_path = letter_dir / terminfo_name;
 
-        if (!is_regular_file(file_path))
+        if (!fs::is_regular_file(file_path))
             return {};
 
         return parse_compiled_terminfo_file(file_path.string(), parse_extended_terminfo);
     }
 
     std::optional<Terminfo> parse_compiled_terminfo_from_env(const std::string_view& name, bool parse_extended_terminfo) {
-        using std::filesystem::path;
+        namespace fs = std::filesystem;
 
         // prefer the supplied name over the environ one
         auto terminfo_name = name;
@@ -120,7 +132,7 @@ namespace mtinfo::terminfo::parser {
         // check the $HOME/.terminfo
         const auto home_dir = get_env("HOME");
         if (home_dir.has_value()) {
-            auto result = parse_compiled_terminfo_from_directory(terminfo_name, (path(terminfo_name) / ".terminfo").string(), parse_extended_terminfo);
+            auto result = parse_compiled_terminfo_from_directory(terminfo_name, (fs::path(terminfo_name) / ".terminfo").string(), parse_extended_terminfo);
 
             if (result.has_value())
                 return result;
@@ -416,8 +428,4 @@ namespace mtinfo::terminfo::parser {
 
         return terminfo;
     }
-}
-
-namespace mtinfo::terminfo {
-    using parser::parse_compiled_terminfo_from_env;
 }
