@@ -54,28 +54,24 @@ namespace mtinfo::terminfo::parser {
         namespace fs = std::filesystem;
 
         if (!fs::is_regular_file(path))
-            throw error::Error("The file does not exist"); // TODO: another error type? better msg?
-
-        auto file_size = fs::file_size(path);
-
-        if (file_size > 10000)
-            throw error::Error("The file is larger than 10Kb"); // TODO: better error, distinct type
+            throw error::Error("The path either does not exist or is not a regular file"); // TODO: another error type? better msg?
 
         std::ifstream file (path.data(), std::ios::binary);
         if (!file.good())
             throw mtinfo::error::Error ("Error reading file '" + std::string (path) + "'");
 
-        // this may be overdoing it but i want to keep it const and not keep useless memory
-        const std::vector<int8_t> buffer = [&]{
-            std::vector<int8_t> x((std::istreambuf_iterator<char> (file)),
-                                   std::istreambuf_iterator<char>());
+        std::vector<int8_t> buffer;
+        buffer.reserve(1000);
 
-            x.shrink_to_fit();
+        const auto end = std::istreambuf_iterator<char>();
+        for (auto begin = std::istreambuf_iterator<char> (file); begin != end;) {
+            if (buffer.size() > 5000) // TODO: define global maximum file size
+                throw error::Error("The file is above the file size limit of 10kb");
 
-            return x;
-        }();
+            buffer.push_back(*begin++);
+        }
 
-        // data is in the buffer, file is no longer needed
+        // close the file
         file.close();
 
         return parse_compiled_terminfo (ByteIterator(buffer.data(), buffer.size()), parse_extended_terminfo);
