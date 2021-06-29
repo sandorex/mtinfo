@@ -15,7 +15,7 @@
 #pragma once
 
 #include "mtinfo/export.hh"
-#include "mtinfo/terminfo/ctinfo_parser_util.hh"
+#include "mtinfo/terminfo/util.hh"
 #include "mtinfo/terminfo/terminfo.hh"
 #include "mtinfo/errors.hh"
 

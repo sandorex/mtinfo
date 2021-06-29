@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "mtinfo/terminfo/ctinfo_parser_util.hh"
+#include <type_traits>
 #include <algorithm>
 #include <cstdint>
 #include <iterator>

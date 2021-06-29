@@ -1,4 +1,4 @@
 build/
-.clangd/
+.cache/
 /compile_commands.json
 tests/test-files-todo/output/**

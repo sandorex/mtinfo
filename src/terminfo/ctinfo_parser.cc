@@ -15,8 +15,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "mtinfo/errors.hh"
-#include "mtinfo/terminfo/ctinfo_parser_util.hh"
-#include "mtinfo/terminfo/ctinfo_parser.hh"
+#include "mtinfo/terminfo/util.hh"
+#include "mtinfo/terminfo/parser.hh"
 #include "mtinfo/terminfo/terminfo.hh"
 
 #include <cstdlib>

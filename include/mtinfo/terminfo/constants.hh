@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "mtinfo/terminfo/terminfo_constants.hh"
-
 #include <algorithm>
 #include <array>
 #include <optional>

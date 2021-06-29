@@ -17,7 +17,7 @@
 // #include "mtinfo/terminfo.hh"
 
 // #include "mtinfo/terminfo/terminfo.hh"
-#include "mtinfo/terminfo/ctinfo_parser.hh"
+#include "mtinfo/terminfo/parser.hh"
 #include "mtinfo/terminfo/terminfo.hh"
 
 namespace mtinfo {
