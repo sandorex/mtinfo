@@ -1,4 +1,4 @@
-# Copyright 2020 Aleksandar Radivojević
+# Copyright 2020-2021 Aleksandar Radivojević
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,11 +53,8 @@ enable_doxygen ()
 include (cmake/StaticAnalyzers.cmake)
 
 option (BUILD_SHARED_LIBS "Enable compilation of shared libraries" OFF)
-option (ENABLE_TESTING "Builds tests" ON)
-option (BUILD_EXAMPLES "Build examples" OFF)
-
-# so libfmt also uses the C++17 standard
-set (CMAKE_CXX_STANDARD 17)
+option (BUILD_TESTS "Builds tests" ON)
+option (BUILD_EXAMPLES "Build examples" ON)
 
 configure_file (src/version.hh.in ${PROJECT_BINARY_DIR}/include/mtinfo/version.hh)
 add_library (mtinfo src/terminfo/ctinfo_parser.cc)
@@ -78,11 +75,21 @@ include (GenerateExportHeader)
 generate_export_header (mtinfo
     EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/include/mtinfo/export.hh)
 
-if (ENABLE_TESTING)
+if (BUILD_EXAMPLES)
+    add_subdirectory (src/examples)
+endif ()
+
+if (BUILD_TESTS)
+    include (FetchContent)
+    FetchContent_Declare (
+        googletest
+        URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+    )
+
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set (gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable (googletest)
+
     enable_testing ()
     add_subdirectory (tests)
 endif ()
-
-# TODO add option to embed all the terminfo files selected or found on the system
-# make an utility for this, make it pack all of it into an array for c and map
-# for c++
