@@ -18,6 +18,8 @@ project (mtinfo VERSION 0.1.0
                 DESCRIPTION "Modern terminfo library"
                 LANGUAGES CXX)
 
+set (mtinfo_SOVERSION 1)
+
 include (cmake/StandardProjectSettings.cmake)
 include (cmake/PreventInSourceBuilds.cmake)
 
@@ -57,7 +59,7 @@ option (BUILD_TESTS "Builds tests" ON)
 option (BUILD_EXAMPLES "Build examples" ON)
 
 configure_file (src/version.hh.in ${PROJECT_BINARY_DIR}/include/mtinfo/version.hh)
-add_library (mtinfo src/terminfo/ctinfo_parser.cc)
+add_library (mtinfo src/terminfo/parser.cc)
 
 target_link_libraries (mtinfo project_options project_warnings)
 target_include_directories (mtinfo
@@ -66,7 +68,7 @@ target_include_directories (mtinfo
     PRIVATE src/)
 set_target_properties (mtinfo PROPERTIES
     VERSION ${PROJECT_VERSION}
-    SOVERSION 1
+    SOVERSION ${mtinfo_SOVERSION}
     # PUBLIC_HEADER include/mtinfo/mtinfo.hh # TODO
     CXX_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_INLINES_HIDDEN ON)
