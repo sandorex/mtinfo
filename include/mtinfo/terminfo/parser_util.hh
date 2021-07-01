@@ -23,7 +23,7 @@
 #include <string>
 #include <cassert>
 
-namespace mtinfo::terminfo::parser {
+namespace mtinfo::terminfo::parser::internal {
     class ByteIterator {
     public:
         const int8_t* start;

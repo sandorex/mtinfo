@@ -15,7 +15,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "mtinfo/errors.hh"
-#include "mtinfo/terminfo/util.hh"
+#include "mtinfo/terminfo/parser_util.hh"
 #include "mtinfo/terminfo/parser.hh"
 #include "mtinfo/terminfo/terminfo.hh"
 
@@ -27,7 +27,7 @@
 
 using namespace std::literals::string_view_literals;
 
-namespace mtinfo::terminfo::parser {
+namespace mtinfo::terminfo::parser::internal {
     std::vector<std::string> split_string (std::string input, const std::string_view& delimiter) {
         std::vector<std::string> buffer;
         size_t pos = 0;

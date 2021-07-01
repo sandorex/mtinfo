@@ -23,3 +23,7 @@ set (gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable (googletest)
 
 enable_testing ()
+
+add_library (public_api_test STATIC EXCLUDE_FROM_ALL public_api.cc)
+target_link_libraries (public_api_test mtinfo)
+# TODO add test

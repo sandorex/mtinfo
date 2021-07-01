@@ -19,7 +19,7 @@
 #include <optional>
 #include <string_view>
 
-namespace mtinfo::terminfo
+namespace mtinfo::terminfo::internal
 {
     inline namespace constants
     {
@@ -624,3 +624,7 @@ namespace mtinfo::terminfo
                        == std::size (TERMINFO_STR_NAMES_SHORT));
     } // namespace constants
 } // namespace mtinfo::internal
+
+namespace mtinfo::terminfo {
+    namespace constants = internal::constants;
+}

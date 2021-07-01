@@ -15,7 +15,7 @@
 #pragma once
 
 #include "mtinfo/export.hh"
-#include "mtinfo/terminfo/util.hh"
+#include "mtinfo/terminfo/parser_util.hh"
 #include "mtinfo/terminfo/terminfo.hh"
 #include "mtinfo/errors.hh"
 
@@ -25,7 +25,7 @@
 #include <optional>
 #include <algorithm>
 
-namespace mtinfo::terminfo::parser {
+namespace mtinfo::terminfo::parser::internal {
     const int MAGIC_NUMBER_16BIT = 0x11A;
     const int MAGIC_NUMBER_32BIT = 0x21E;
 
@@ -94,5 +94,14 @@ namespace mtinfo::terminfo::parser {
 
     std::vector<std::optional<std::string>> parse_string_table (ByteIterator& iter, std::vector<std::optional<uint16_t>> offsets);
 
-    Terminfo parse_compiled_terminfo(ByteIterator iter, bool parse_extended = true);
+    MTINFO_EXPORT Terminfo
+    parse_compiled_terminfo(ByteIterator iter, bool parse_extended = true);
+}
+
+// PUBLIC API
+namespace mtinfo::terminfo::parser {
+    using internal::parse_compiled_terminfo_file;
+    using internal::parse_compiled_terminfo_from_directory;
+    using internal::parse_compiled_terminfo_from_env;
+    using internal::parse_compiled_terminfo;
 }

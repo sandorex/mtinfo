@@ -60,6 +60,7 @@ option (BUILD_EXAMPLES "Build examples" ON)
 
 configure_file (src/version.hh.in ${PROJECT_BINARY_DIR}/include/mtinfo/version.hh)
 add_library (mtinfo src/terminfo/parser.cc)
+add_library (mtinfo::mtinfo ALIAS mtinfo)
 
 target_link_libraries (mtinfo project_options project_warnings)
 target_include_directories (mtinfo
