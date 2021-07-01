@@ -22,8 +22,7 @@ FetchContent_Declare (
 set (gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable (googletest)
 
-enable_testing ()
-
-add_library (public_api_test STATIC EXCLUDE_FROM_ALL public_api.cc)
-target_link_libraries (public_api_test mtinfo)
-# TODO add test
+add_library (test_public_api STATIC EXCLUDE_FROM_ALL public_api.cc)
+target_link_libraries (test_public_api mtinfo)
+add_test (NAME public_api_test COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR}
+                                                        --target test_public_api)
